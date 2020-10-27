@@ -173,7 +173,7 @@ static int worker_state_init(
   int server_fd) {
 
   /* initialize */
-  memset(&state, 0, sizeof(state));
+  memset(&state, 0, sizeof(*state));
   state->server_fd = server_fd;
 
   /* set up API state */
