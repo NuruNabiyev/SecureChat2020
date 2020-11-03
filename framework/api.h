@@ -7,6 +7,8 @@ struct api_msg {
 
 struct api_state {
   int fd;
+  int loggedIn;
+  
   /* TODO add required fields */
 };
 
