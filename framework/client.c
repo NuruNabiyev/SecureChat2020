@@ -13,7 +13,7 @@ struct client_state {
     struct api_state api;
     int eof;
     struct ui_state ui;
-    /* TODO client state variables go here */
+    int loggedIn;
 };
 
 /**
@@ -61,10 +61,10 @@ static int client_process_command(struct client_state *state) {
 
   //Modify this to see how it works in both states 
   // 0 -> not loggedin; 1 -> loggedin
-  state->api.loggedIn = 0;
+  state->loggedIn = 0;
   fgets(text, sizeof(text), stdin);
 
-  int c = checkCommand(text, state->api.loggedIn);
+  int c = checkCommand(text, state->loggedIn);
   if (c == 1) {
     int send_i = send(state->api.fd, text, strlen(text), 0);
     printf("sent %i bytes to %i: %s\n", send_i, state->api.fd, text);
