@@ -1,5 +1,7 @@
 #include <assert.h>
 #include <string.h>
+#include <sys/socket.h>
+#include <stdio.h>
 
 #include "api.h"
 
@@ -15,9 +17,20 @@ int api_recv(struct api_state *state, struct api_msg *msg) {
   assert(state);
   assert(msg);
 
+  char client_msg[500];
+  int recv_bytes = recv(state->fd, client_msg, 500, 0);
+  // substring until received bytes
+  char substr[recv_bytes];
+  for (int i = 0; i < recv_bytes; ++i)
+    substr[i] = client_msg[i];
+  substr[recv_bytes] = '\0';
+
+  printf("worker received %i bytes from %i: %s\n", recv_bytes, state->fd, substr);
   /* TODO receive a message and store information in *msg */
 
-  return -1;
+  if (recv_bytes > 0) return 1;
+  else if (recv_bytes < 0) return -1;
+  else return 0;
 }
 
 /**

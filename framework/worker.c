@@ -59,7 +59,7 @@ static int execute_request(
 
   /* TODO handle request and reply to client */
 
-  return -1;
+  return 0;
 }
 
 /**

@@ -27,9 +27,6 @@ void ui_state_init(struct ui_state *state) {
   /* TODO initialize ui_state */
 }
 
-
-
-
 char** removeSpaces(char* string)
 {
   int i = 0;
@@ -48,14 +45,14 @@ char** removeSpaces(char* string)
   
 }
 
-void checkCommand(char* string, int loginStatus)
+int checkCommand(char* string, int loginStatus)
 {
   //TODO: exit when eof is met
   char copyString[strlen(string)];
   char** parsedString;
 
   strcpy(copyString,string);
-  parsedString = removeSpaces(string);
+  parsedString = removeSpaces(copyString);
   int i = returnStringArraySize(parsedString);
 
   if(loginStatus == 0)
@@ -65,6 +62,8 @@ void checkCommand(char* string, int loginStatus)
       if(checkLoginCommand(parsedString,i) == 0 && checkRegisterCommand(parsedString,i) == 0 && checkExitUsersCommand(parsedString,i,loginStatus) == 0)
       {
         printf("error: Unknown Command! \n");
+      } else {
+        return 1;
       }
     }
     else
@@ -90,6 +89,7 @@ void checkCommand(char* string, int loginStatus)
       }
     }
   }
+  return 0;
 }  
 int returnStringArraySize(char** string)
 {

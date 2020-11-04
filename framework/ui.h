@@ -9,7 +9,7 @@ void ui_state_free(struct ui_state *state);
 void ui_state_init(struct ui_state *state);
 
 //The mothod verifies the command that was inserted by the user
-void checkCommand(char* string,int loginStatus);
+int checkCommand(char* string,int loginStatus);
 
 //Removes Whitespaces and returns a array of strings
 char** removeSpaces(char* string);

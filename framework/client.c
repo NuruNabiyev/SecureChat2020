@@ -10,10 +10,10 @@
 #include "util.h"
 
 struct client_state {
-  struct api_state api;
-  int eof;
-  struct ui_state ui;
-  /* TODO client state variables go here */
+    struct api_state api;
+    int eof;
+    struct ui_state ui;
+    /* TODO client state variables go here */
 };
 
 /**
@@ -21,7 +21,7 @@ struct client_state {
  *        connection fd. Fails with -1.
  */
 static int client_connect(struct client_state *state,
-  const char *hostname, uint16_t port) {
+                          const char *hostname, uint16_t port) {
   int fd;
   struct sockaddr_in addr;
 
@@ -46,7 +46,6 @@ static int client_connect(struct client_state *state,
     close(fd);
     return -1;
   }
-
   return fd;
 }
 
@@ -60,15 +59,16 @@ static int client_process_command(struct client_state *state) {
   //here the text is a varibale. maybe place it in a struct? 
   char text[500];
 
-  // read(0,text,strlen(text));
-  
   //Modify this to see how it works in both states 
   // 0 -> not loggedin; 1 -> loggedin
   state->api.loggedIn = 0;
-  fgets(text,sizeof(text),stdin);
- 
-  checkCommand(text, state->api.loggedIn);
+  fgets(text, sizeof(text), stdin);
 
+  int c = checkCommand(text, state->api.loggedIn);
+  if (c == 1) {
+    int send_i = send(state->api.fd, text, strlen(text), 0);
+    printf("sent %i bytes to %i: %s\n", send_i, state->api.fd, text);
+  }
   /* TODO read and handle user command from stdin */
   return 0;
 }
@@ -79,8 +79,8 @@ static int client_process_command(struct client_state *state) {
  * @param msg     Message to handle
  */
 static int execute_request(
-  struct client_state *state,
-  const struct api_msg *msg) {
+        struct client_state *state,
+        const struct api_msg *msg) {
 
   /* TODO handle request and reply to client */
 
@@ -139,7 +139,7 @@ static int handle_incoming(struct client_state *state) {
   fdmax = state->api.fd;
 
   /* wait for at least one to become ready */
-  r = select(fdmax+1, &readfds, NULL, NULL, NULL);
+  r = select(fdmax + 1, &readfds, NULL, NULL, NULL);
   if (r < 0) {
     if (errno == EINTR) return 0;
     perror("error: select failed");
@@ -212,8 +212,6 @@ int main(int argc, char **argv) {
   /* client things */
   while (!state.eof && handle_incoming(&state) == 0);
 
-
-
   /* clean up */
   /* TODO any additional client cleanup */
   client_state_free(&state);
@@ -221,298 +219,3 @@ int main(int argc, char **argv) {
 
   return 0;
 }
-
-
-/*##### Please leave this here for the moment####*/
-
-// char** removeSpaces(char* string)
-// {
-//   int i = 0;
-//   int n = strlen(string);
-//   char** token = malloc(sizeof(char*)*n);
-//   const char delim[4] = "  \t\n";
-//   token[i] = strtok(string, delim);
-
-//   while(token[i] != NULL)
-//   {
-//     i++;
-//     token[i] = strtok(NULL, delim);
-//   }
-  
-//   return token;
-  
-// }
-
-// void checkCommand(char* string, int loginStatus)
-// {
-//   //TODO: exit when eof is met
-//   char copyString[strlen(string)];
-//   char** parsedString;
-
-//   strcpy(copyString,string);
-//   parsedString = removeSpaces(string);
-//   int i = returnStringArraySize(parsedString);
-
-//   if(loginStatus == 0)
-//   {
-//     if(*parsedString[0] == '/')
-//     {
-//       if(checkLoginCommand(parsedString,i) == 0 && checkRegisterCommand(parsedString,i) == 0 && checkExitUsersCommand(parsedString,i,loginStatus) == 0)
-//       {
-//         printf("error: Unknown Command! \n");
-//       }
-//     }
-//     else
-//     {
-//       printf("The / character is missing!\n");
-//     }    
-//   }
-//   else
-//   {
-//     if(strcmp(parsedString[0],"/register") == 0 || strcmp(parsedString[0],"/login") == 0)
-//     {
-//       printf("You cannot login or register again as you are already logged in! \n");
-//     }
-//     else if(checkExitUsersCommand(parsedString,i,loginStatus) == 0)
-//     {
-//       if(parsedString[0][0]=='/')
-//       {
-//         printf("This is not a valid message!\n");
-//       }
-//       else
-//       {
-//         parseMessage(copyString);
-//       }
-//     }
-//   }
-// }  
-// int returnStringArraySize(char** string)
-// {
-//   int i=0;
-//   while(string[i] != NULL)
-//   {
-//     i++;
-//   }
-//   return i;
-// }
-
-// int checkLoginCommand(char** string,int i)
-// {
-//   //TODO: send the message and verify auth/ received server message
-//    if(strcmp(string[0],"/login") == 0)
-//     {
-        
-//       if(strcmp(string[0],"/login") == 0 && i < 4 && i > 2)
-//         {
-//           printf("Send it!!\n");
-//           //if(auth correct)
-//           return 1;
-//           //else
-//           //printf("error: No such user \n")
-//         }
-//         else
-//         {
-//           printf("error: Incorect login command!\n");
-//           return 2;
-//         }
-//     }
-//     return 0;
-// }
-
-// int checkRegisterCommand(char** string,int i)
-// {
-//    //TODO: send the message and verify user if exists/ received server message
-//    if(strcmp(string[0],"/register") == 0)
-//     {
-        
-//       if(strcmp(string[0],"/register") == 0 && i < 4 && i > 2)
-//         {
-//           printf("Send it!!\n");
-//           //if(registration correct)
-//           return 1;
-//           //else
-//           //printf("error: Already registered \n")
-//         }
-//         else
-//         {
-//           printf("error: Incorect register command!\n");
-//           return 2;
-//         }
-//     }
-//     return 0;
-// }
-
-// int checkExitUsersCommand(char** string, int i, int loggedin)
-// {
-//   //TODO: check hot many workers are online
-//   if((strcmp(string[0],"/exit") == 0) && i < 2)
-//   {
-//     printf("The User exited the program!\n");
-//     exit(0);
-//   }
-//   else if( (strcmp(string[0],"/users") == 0) && i < 2)
-//   {
-//     if(loggedin == 1)
-//     {
-//     //Check how many workers are opened and which have the api_state.loggedin true
-//     printf("3 Users are currently logged in.\n");
-//     return 1;
-//     }
-//     else
-//     {
-//       printf("error: user is not logged in!\n");
-//       return 2;
-//     }
-    
-//   }
-//   return 0;
-// }
-
-// void removeNewLine(char* string)
-// {
-//   if(string[strlen(string)-1] == '\n')
-//     string[strlen(string)-1] = '\0';
-// }
-
-// void parseMessage(char* string)
-// {
-//   //TODO: Send text as broadcast/ file and write private message with th user it send
-//   //TODO: Extract Username of the client
-//   removeNewLine(string);
-//   if(string[0] != ' ' && string[0] != '\t' && string[strlen(string)-1] != ' ' && string[strlen(string)-1] != ' ' && string[strlen(string)-1] != '\n')
-//   {
-//     if(string[0] == '@')
-//     {
-//         printf("%s Hey how are you? \n",string);
-//     }
-//     else
-//     {
-//       //Send text to chat as a broadcast 
-//       printf("2020-11-03 18:30:00 Group9: %s \n",string);
-//     }
-//   }
-//   else
-//     {
-//       printf("error: Not a good message format!\n");
-//     }
-// }
-
-
-// Possible to need this code DO NOT DELETE YET
-
-
-// if(*string[0] == '/')
-//     {
-//       if(strcmp(string[0],"/login") == 0)
-//       {
-        
-//           if(strcmp(string[0],"/login") == 0 && i < 4 && i > 2)
-//           {
-//             printf("Send it!!\n");
-//           }
-//           else
-//           {
-//             printf("error: Incorect Login command!\n");
-//           }
-//         }
-//       else if(strcmp(string[0],"/register") == 0)
-//       {
-//           if(strcmp(string[0],"/register") == 0 && i < 4 && i > 2)
-//           {
-//             printf("Send it!!\n");
-//           }
-//           else
-//           {
-//             printf("error: Incorect register command!\n");
-//           }
-//         }
-//       else if((strcmp(string[0],"/exit") == 0) && i < 2)
-//         {
-//         printf("The User exited the program!\n");
-//         exit(0);
-//         }
-//       else if( (strcmp(string[0],"/users") == 0) && i < 2)
-//         {
-//         //Check how many workers are opened and which have the api_state.loggedin true
-//         printf("3 Users are currently logged in.\n");
-//         }
-//       else
-//         {
-//         printf("error: Unknown Command!\n");
-//         }  
-//     }
-//     else
-//     {
-//       printf("error: The / character is missing!\n");
-//     }
-//   }
-//   else
-//   {
-//     //take care of the messages
-//     // parseMessages(string);
-//     printf("parsing the message!");
-//   }
-
-
-
-
-
-
-// void checkCommand(char** string)
-// {
-//   int i = returnSize1(string);
-//   if(*string[0] == '/')
-//   {
-//     printf("HERE: %s\n", string[0]);
-//     if(strcmp(string[0],"/login") == 0)
-//     {
-//         printf("SIZE: %d \n", i);
-//         if(strcmp(string[0],"/login") == 0 && i < 4 && i > 2)
-//         {
-//           // printf("%c \n",string[2][((int)strlen(string[2]))-2]);
-//           printf("Papanas %s \n",string[2]);
-//           // printf("Papanas %d \n",(int)strlen(string[2]));
-//           if(string[2][((int)strlen(string[2]))-1] == '\n')
-//           {
-//             printf("it works!\n");
-//           }
-//           else
-//           {
-//             printf("Missing an argument in the login statement!\n");
-//           }
-          
-//         }
-//         else
-//         {
-//           printf("Incorect Login command!\n");
-//         }
-        
-//         // else
-//         // {
-//         // //  registerHandle() 
-//         // }
-        
-//     }
-//     else if((strcmp(string[0],"/exit\n") == 0) || (strcmp(string[0],"/exit") == 0 && strcmp(string[1],"\n") == 0))
-//     {
-//       printf("The User exited the program!\n");
-//       exit(0);
-//     }
-//     else if( (strcmp(string[0],"/users\n") == 0) || (strcmp(string[0],"/users") == 0 && strcmp(string[1],"\n") == 0))
-//     {
-//       //Check how many workers are opened and which have the api_state.loggedin true
-//       printf("3 Users are currently logged in.\n");
-//     }
-//     else
-//     {
-//       printf("error: Unknown Command!\n");
-//     }
-    
-
-//   }
-//   else
-//   {
-//     printf("error: The / character is missing!\n");
-//   }
-  
-// }
