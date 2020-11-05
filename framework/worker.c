@@ -58,6 +58,10 @@ static int execute_request(
   const struct api_msg *msg) {
 
   /* TODO handle request and reply to client */
+  printf("TODO PROCESS THIS: %s", msg->received);
+  char* text = "You have been registered!";
+  int send_i = send(state->api.fd, text, strlen(text), 0);
+  printf("replied %i bytes\n", send_i);
 
   return 0;
 }

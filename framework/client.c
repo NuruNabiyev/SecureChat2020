@@ -69,7 +69,6 @@ static int client_process_command(struct client_state *state) {
     int send_i = send(state->api.fd, text, strlen(text), 0);
     printf("sent %i bytes to %i: %s\n", send_i, state->api.fd, text);
   }
-  /* TODO read and handle user command from stdin */
   return 0;
 }
 
@@ -83,8 +82,9 @@ static int execute_request(
         const struct api_msg *msg) {
 
   /* TODO handle request and reply to client */
+  printf("TODO PROCESS this: %s\n", msg->received);
 
-  return -1;
+  return 0;
 }
 
 /**
