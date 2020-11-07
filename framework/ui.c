@@ -220,12 +220,12 @@ int parseMessage(char* string)
   {
     if(string[0] == '@')
     {
-        printf("%s %s? \n","@user",string);
+        // printf("%s %s? \n","@user",string);
         return 1;
     }
     else
     {
-      printf("2020-11-03 18:30:00 Group9: %s \n",string);
+      // printf("2020-11-03 18:30:00 Group9: %s \n",string);
       return 1;
     }
   }
