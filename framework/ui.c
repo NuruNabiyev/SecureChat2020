@@ -150,7 +150,6 @@ int checkLoginCommand(char** string,int i,int loggedin)
         else
         {
           printf("error: Incorect login command!\n");
-          return 2;
         }
     }
     else 
