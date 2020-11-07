@@ -61,7 +61,9 @@ int checkCommand(char *string, int loginStatus) {
         return 1;
       }
     } else {
-      printf("The / character is missing!\n");
+      //parseMessage(copyString); // todo temporarily while loginStatus is not fixed
+      return 1;
+      //printf("The / character is missing!\n");
     }
   } else {
     if (strcmp(parsedString[0], "/register") == 0 || strcmp(parsedString[0], "/login") == 0) {
@@ -127,19 +129,23 @@ void removeNewLine(char *string) {
     string[strlen(string) - 1] = '\0';
 }
 
-void parseMessage(char *string) {
+int parseMessage(char *string) {
   //TODO: Send text as broadcast/ file and write private message with th user it send
   //TODO: Extract Username of the client
   removeNewLine(string);
-  if (string[0] != ' ' && string[0] != '\t' && string[strlen(string) - 1] != ' ' && string[strlen(string) - 1] != ' ' &&
+  if (string[0] != ' ' && string[0] != '\t'
+      && string[strlen(string) - 1] != ' '
+      && string[strlen(string) - 1] != ' ' &&
       string[strlen(string) - 1] != '\n') {
     if (string[0] == '@') {
       printf("%s Hey how are you? \n", string);
     } else {
       //Send text to chat as a broadcast 
-      printf("2020-11-03 18:30:00 Group9: %s \n", string);
+      //printf("2020-11-03 18:30:00 Group9: %s \n", string);
+      return 1;
     }
   } else {
     printf("error: Not a good message format!\n");
   }
+  return 0;
 }

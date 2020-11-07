@@ -10,6 +10,7 @@
 #include <sys/time.h>
 #include <sys/wait.h>
 #include <unistd.h>
+#include <sqlite3.h>
 
 #include "util.h"
 #include "worker.h"
@@ -367,6 +368,32 @@ int main(int argc, char **argv) {
   /* start listening for connections */
   state.sockfd = create_server_socket(port);
   if (state.sockfd < 0) return 1;
+
+  int db_exec;
+  sqlite3 *db;
+  sqlite3_stmt *db_stmt;
+
+  // create database
+  db_exec = sqlite3_open("chat.db", &db);
+  if (db_exec != SQLITE_OK) {
+    puts("Could not create database");
+    return 1;
+  }
+
+
+  // create users table where registered users will be stored
+  sqlite3_prepare_v2(db, "CREATE TABLE IF NOT EXISTS \"global_chat\" ("
+                         "\"id\" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT UNIQUE,"
+//                         "\"timestamp\" TEXT NOT NULL,"
+//                         "\"from_user\" TEXT NOT NULL,"
+                         "\"message\" TEXT NOT NULL"
+                         ");",
+                     -1, &db_stmt, NULL);
+  db_exec = sqlite3_step(db_stmt);
+  if (db_exec != SQLITE_DONE) {
+    printf("ERROR in database: %s\n", sqlite3_errmsg(db));
+    return 0;
+  }
 
   /* wait for connections */
   for (;;) {

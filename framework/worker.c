@@ -5,6 +5,12 @@
 #include <string.h>
 #include <unistd.h>
 
+#include <sqlite3.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <sys/select.h>
+
 #include "api.h"
 #include "util.h"
 #include "worker.h"
@@ -66,7 +72,27 @@ static int execute_request(
   else if (strstr(msg->received, "/login") != NULL) {
     text = "You have been logged in!";
   } else {
-    // todo send message to other workers
+    printf("received global: %s\n", msg->received);
+
+    char *curr_time = get_current_time();
+    char *user = "group 9:";  //todo extract from db
+    char *main_msg = (char *) malloc(strlen(msg->received) + strlen(curr_time) + strlen(user));
+    sprintf(main_msg, "%s %s %s", curr_time, user, msg->received);
+    printf("%s", main_msg);
+    text = main_msg;
+//    db_sql = (char *) malloc(strlen(msg->received)+200);
+//    sprintf(db_sql, "INSERT INTO global_chat (message) VALUES (\"%s\");\n", msg->received);
+//    sqlite3_prepare_v2(db, db_sql, strlen(db_sql), &db_stmt, NULL);
+//    db_rc = sqlite3_step(db_stmt);
+//    if (db_rc == SQLITE_DONE) {
+//      // send to client
+//      printf("entered into db!\n");
+//      //int sid = send(conn_fd, actual_payload, strlen(actual_payload), 0);
+//    } else {
+//      printf("ERROR in adding message to table: %s\n", sqlite3_errmsg(db));
+//    }
+
+    // add to db and ask every worker to broadcast
   }
   int send_i = send(state->api.fd, text, strlen(text), 0);
   printf("replied %i bytes\n", send_i);

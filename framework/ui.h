@@ -28,7 +28,7 @@ int checkRegisterCommand(char **string, int i);
 int checkExitUsersCommand(char **string, int i, int loggin);
 
 //Parses the message send by the user(verifies if it is public and it's format) 
-void parseMessage(char *string);
+int parseMessage(char *string);
 
 //Modifies a string by removing his end of line character as a message cannot have a end of line
 void removeNewLine(char *string);

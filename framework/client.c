@@ -65,7 +65,7 @@ static int client_process_command(struct client_state *state) {
   fgets(text, sizeof(text), stdin);
 
   // todo somehow loggedIn info is not saved
-  printf("login status: %i\n", state->loggedIn);
+  //printf("login status: %i\n", state->loggedIn);
   int c = checkCommand(text, state->loggedIn);
   if (c == 1) {
     send(state->api.fd, text, strlen(text), 0);
@@ -93,7 +93,7 @@ static int execute_request(
     printf("authentication succeeded\n");
   } else {
     // process public message
-    printf("%s", msg->received);
+    printf("%s\n", msg->received);
   }
 
   return 0;
