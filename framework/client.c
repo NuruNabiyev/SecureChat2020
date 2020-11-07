@@ -58,8 +58,8 @@ static int client_process_command(struct client_state *state) {
   if(state->ui.correctInput == 1)
   {
     int send_i = send(state->api.fd, state->ui.text, strlen(state->ui.text), 0);
-    printf("sent %i bytes to %i: %s\n", send_i, state->api.fd, text);
-  }\
+    // printf("sent %i bytes to %i: %s\n", send_i, state->api.fd, text);
+  }
   return 0;
 }
 
