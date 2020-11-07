@@ -61,13 +61,13 @@ static int client_process_command(struct client_state *state) {
 
   //Modify this to see how it works in both states 
   // 0 -> not loggedin; 1 -> loggedin
-  state->loggedIn = 0;
   fgets(text, sizeof(text), stdin);
 
   // todo somehow loggedIn info is not saved
   //printf("login status: %i\n", state->loggedIn);
   int c = checkCommand(text, state->loggedIn);
   if (c == 1) {
+    if (!state->loggedIn) state->loggedIn = 1;
     send(state->api.fd, text, strlen(text), 0);
     //printf("sent %i bytes to %i: %s\n", send_i, state->api.fd, text);
   }
@@ -177,6 +177,8 @@ static int client_state_init(struct client_state *state) {
 
   /* initialize UI */
   ui_state_init(&state->ui);
+
+  state->loggedIn = 0;
 
   /* TODO any additional client state initialization */
 

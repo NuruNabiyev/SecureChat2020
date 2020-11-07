@@ -40,7 +40,6 @@ char **removeSpaces(char *string) {
   }
 
   return token;
-
 }
 
 int checkCommand(char *string, int loginStatus) {
@@ -52,7 +51,7 @@ int checkCommand(char *string, int loginStatus) {
   parsedString = removeSpaces(copyString);
   int i = returnStringArraySize(parsedString);
 
-  if (loginStatus == 0) {
+  if (loginStatus != 1) {
     if (*parsedString[0] == '/') {
       if (checkLoginCommand(parsedString, i) == 0
           && checkRegisterCommand(parsedString, i) == 0
@@ -61,7 +60,7 @@ int checkCommand(char *string, int loginStatus) {
         return 1;
       }
     } else {
-      //parseMessage(copyString); // todo temporarily while loginStatus is not fixed
+      //parseMessage(copyString); // TODO: LoginStatus has been fixed
       return 1;
       //printf("The / character is missing!\n");
     }
