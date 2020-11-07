@@ -27,6 +27,16 @@ void ui_state_init(struct ui_state *state) {
   /* TODO initialize ui_state */
 }
 
+int stack_of_commands(char* string)
+{
+  if(strcmp(string,"/login") == 0) return 1;
+  if(strcmp(string,"/register") == 0) return 2;
+  if(strcmp(string,"/users") == 0) return 3;
+  if(strcmp(string,"/exit") == 0) return 4;
+  if(string[0] != '/') return 5; 
+  return 0;
+}
+
 char **removeSpaces(char *string) {
   int i = 0;
   int n = strlen(string);
@@ -47,11 +57,16 @@ int checkCommand(char *string, int loginStatus) {
   char copyString[strlen(string)];
   char **parsedString;
 
+  if (strcmp(string, "\n") == 0 || strcmp(string, "\0") == 0) {
+    printf("Message cannot be empty.\n");
+    return 0;
+  }
+
   strcpy(copyString, string);
   parsedString = removeSpaces(copyString);
   int i = returnStringArraySize(parsedString);
 
-  if (loginStatus != 1) {
+ /* if (loginStatus != 1) {
     if (*parsedString[0] == '/') {
       if (checkLoginCommand(parsedString, i) == 0
           && checkRegisterCommand(parsedString, i) == 0
@@ -60,7 +75,7 @@ int checkCommand(char *string, int loginStatus) {
         return 1;
       }
     } else {
-      //parseMessage(copyString); // TODO: LoginStatus has been fixed
+      parseMessage(copyString); // todo temporarily while loginStatus is not fixed
       return 1;
       //printf("The / character is missing!\n");
     }
@@ -74,7 +89,34 @@ int checkCommand(char *string, int loginStatus) {
         parseMessage(copyString);
       }
     }
+  }*/
+
+  switch (stack_of_commands(parsedString[0])) {
+    case 1:
+      return checkLoginCommand(parsedString, i, loginStatus);
+
+    case 2: 
+      return checkRegisterCommand(parsedString, i, loginStatus);
+
+    case 3:
+      return checkUsersCommand(i, loginStatus);
+
+    case 4:
+      return checkExitCommand(parsedString, i, loginStatus);
+
+    case 5:
+      if (!loginStatus) printf("Error, you are not logged in.\n");
+      else return parseMessage(copyString);
+      break;
+
+    default:
+      printf("Error: unknown command.\n");
+      break;
   }
+
+
+
+
   return 0;
 }
 
@@ -86,7 +128,25 @@ int returnStringArraySize(char **string) {
   return i;
 }
 
-int checkLoginCommand(char **string, int i) {
+int checkUsersCommand(int i, int loggedIn) {
+  if (!loggedIn) {
+    printf("Error: user not logged in.\n");
+    return 0;
+  }
+
+  if (i < 2) {
+    printf("X users are currently logged in.\n");
+    return 1;
+  }
+  return 0;
+}
+
+int checkLoginCommand(char **string, int i, int loggedIn) {
+  if (loggedIn) {
+    printf("You are already logged in.\n");
+    return 0;
+  }
+
   if (strcmp(string[0], "/login") == 0) {
     if (strcmp(string[0], "/login") == 0 && i < 4 && i > 2) {
       return 1;
@@ -97,7 +157,12 @@ int checkLoginCommand(char **string, int i) {
   return 0;
 }
 
-int checkRegisterCommand(char **string, int i) {
+int checkRegisterCommand(char **string, int i, int loggedIn) {
+  if(loggedIn) {
+    printf("You are already logged in.\n");
+    return 0;
+  }
+
   if (strcmp(string[0], "/register") == 0) {
     if (strcmp(string[0], "/register") == 0 && i < 4 && i > 2) {
       return 1;
@@ -108,17 +173,11 @@ int checkRegisterCommand(char **string, int i) {
   return 0;
 }
 
-int checkExitUsersCommand(char **string, int i, int loggedin) {
-  //TODO: check hot many workers are online
+int checkExitCommand(char **string, int i, int loggedin) {
+
   if ((strcmp(string[0], "/exit") == 0) && i < 2) {
     printf("The User exited the program!\n");
     exit(0);
-  } else if ((strcmp(string[0], "/users") == 0) && i < 2) {
-    if (loggedin == 1) {
-      return 1;
-    } else {
-      printf("error: user is not logged in!\n");
-    }
   }
   return 0;
 }

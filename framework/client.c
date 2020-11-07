@@ -59,12 +59,8 @@ static int client_process_command(struct client_state *state) {
   //here the text is a varibale. maybe place it in a struct? 
   char text[500];
 
-  //Modify this to see how it works in both states 
-  // 0 -> not loggedin; 1 -> loggedin
   fgets(text, sizeof(text), stdin);
 
-  // todo somehow loggedIn info is not saved
-  //printf("login status: %i\n", state->loggedIn);
   int c = checkCommand(text, state->loggedIn);
   if (c == 1) {
     if (!state->loggedIn) state->loggedIn = 1;

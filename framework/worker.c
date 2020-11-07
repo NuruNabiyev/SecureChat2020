@@ -99,6 +99,8 @@ static int execute_request(
       return 1;
     }
 
+    // SQL Query vulnerable to SQL Injection, will fix with parameterised query
+    // using sqlite3_bind_text() in coming deadline.
     char *sql_format = "INSERT INTO global_chat (message) VALUES (\"%s\");";
     db_sql = (char *) malloc(strlen(sql_format) + strlen(newMain) + 5);
     sprintf(db_sql, sql_format, newMain);

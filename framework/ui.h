@@ -18,14 +18,17 @@ char **removeSpaces(char *string);
 //Returns the size of an array of strings
 int returnStringArraySize(char **string);
 
+//Verifies the users command
+int checkUsersCommand(int i, int loggedIn);
+
 //Verifies the login command
-int checkLoginCommand(char **string, int i);
+int checkLoginCommand(char **string, int i, int loggedIn);
 
 //Verifies the register command
-int checkRegisterCommand(char **string, int i);
+int checkRegisterCommand(char **string, int i, int loggedIn);
 
 //Verifies the exit and users command 
-int checkExitUsersCommand(char **string, int i, int loggin);
+int checkExitCommand(char **string, int i, int loggin);
 
 //Parses the message send by the user(verifies if it is public and it's format) 
 int parseMessage(char *string);
