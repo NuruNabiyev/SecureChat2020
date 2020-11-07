@@ -216,7 +216,7 @@ int parseMessage(char* string)
   if(string[0] != ' ' && string[0] != '\t' 
       && string[strlen(string)-1] != ' ' 
       && string[strlen(string)-1] != ' ' 
-      && string[strlen(string)-1] != '\n')
+      && string[strlen(string)-1] != '\t')
   {
     if(string[0] == '@')
     {
