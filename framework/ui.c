@@ -99,7 +99,11 @@ int checkCommand(struct ui_state *state)
         return 0;
       
       case 2:
-        return checkRegisterCommand(parsedString,sizeArray, state->loggedin);
+        if (checkRegisterCommand(parsedString,sizeArray, state->loggedin) == 1) {
+          state->loggedin = 1;
+          return 1;
+        }
+        return 0;
         break;
       
       case 3:
