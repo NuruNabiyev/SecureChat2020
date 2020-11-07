@@ -32,9 +32,11 @@ void ui_state_init(struct ui_state *state) {
 
 void ui_process_command(struct ui_state *state)
 {
-  ui_state_init(state);
+  if (!state->loggedin) {
+      ui_state_init(state);
+  }
   readLine(state);
-  state->correctInput = checkCommand(state->text,state->loggedin);
+  state->correctInput = checkCommand(state);
 }
 
 void readLine(struct ui_state *state)
@@ -70,19 +72,19 @@ int stack_of_commands(char* string)
 
 }
 
-int checkCommand(char* string, int loginStatus)
+int checkCommand(struct ui_state *state)
 {
   //TODO: exit when eof is met
-  char copyString[strlen(string)];
+  char copyString[strlen(state->text)];
   char** parsedString;
 
-  strcpy(copyString,string);
+  strcpy(copyString,state->text);
   parsedString = removeSpaces(copyString);
   int sizeArray = returnStringArraySize(parsedString);
   
   if(*parsedString == NULL)
   {
-    if(loginStatus == 0) printf("error: Unknown command! \n");
+    if(state->loggedin == 0) printf("error: Unknown command! \n");
     else printf("error: Wrong message structure or wrong command! \n");
   }
   else
@@ -90,15 +92,18 @@ int checkCommand(char* string, int loginStatus)
     switch (stack_of_commands(parsedString[0]))
     {
       case 1:
-        return checkLoginCommand(parsedString,sizeArray, loginStatus);
-        break;
+        if (checkLoginCommand(parsedString,sizeArray, state->loggedin) == 1) {
+          state->loggedin = 1;
+          return 1;
+        }
+        return 0;
       
       case 2:
-        return checkRegisterCommand(parsedString,sizeArray, loginStatus);
+        return checkRegisterCommand(parsedString,sizeArray, state->loggedin);
         break;
       
       case 3:
-        return checkUsersCommand(parsedString, sizeArray, loginStatus);
+        return checkUsersCommand(parsedString, sizeArray, state->loggedin);
         break;
       
       case 4:
@@ -106,7 +111,7 @@ int checkCommand(char* string, int loginStatus)
         break;
       
       case 5:
-        if( loginStatus == 0) printf("error:The '/' character is missing!\n");
+        if( state->loggedin == 0) printf("error: you are not yet logged in!\n");
         else return parseMessage(copyString);
         break;
       
