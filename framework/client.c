@@ -64,10 +64,12 @@ static int client_process_command(struct client_state *state) {
   state->loggedIn = 0;
   fgets(text, sizeof(text), stdin);
 
+  // todo somehow loggedIn info is not saved
+  printf("login status: %i\n", state->loggedIn);
   int c = checkCommand(text, state->loggedIn);
   if (c == 1) {
-    int send_i = send(state->api.fd, text, strlen(text), 0);
-    printf("sent %i bytes to %i: %s\n", send_i, state->api.fd, text);
+    send(state->api.fd, text, strlen(text), 0);
+    //printf("sent %i bytes to %i: %s\n", send_i, state->api.fd, text);
   }
   return 0;
 }
@@ -81,8 +83,18 @@ static int execute_request(
         struct client_state *state,
         const struct api_msg *msg) {
 
-  /* TODO handle request and reply to client */
-  printf("TODO PROCESS this: %s\n", msg->received);
+  /* TODO check properly, this is just easy way to handle login/registration/messages */
+  if (strstr(msg->received, "You have been registered!") != NULL) {
+    state->loggedIn = 1;
+    printf("registration succeeded\n");
+  }
+  else if (strstr(msg->received, "You have been logged in!") != NULL) {
+    state->loggedIn = 1;
+    printf("authentication succeeded\n");
+  } else {
+    // process public message
+    printf("%s", msg->received);
+  }
 
   return 0;
 }

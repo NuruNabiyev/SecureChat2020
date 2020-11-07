@@ -57,9 +57,17 @@ static int execute_request(
   struct worker_state *state,
   const struct api_msg *msg) {
 
-  /* TODO handle request and reply to client */
-  printf("TODO PROCESS THIS: %s", msg->received);
-  char* text = "You have been registered!";
+  char* text;
+
+  /* TODO check properly, this is just easy way to handle login/registration/messages */
+  if (strstr(msg->received, "/register") != NULL) {
+    text = "You have been registered!";
+  }
+  else if (strstr(msg->received, "/login") != NULL) {
+    text = "You have been logged in!";
+  } else {
+    // todo send message to other workers
+  }
   int send_i = send(state->api.fd, text, strlen(text), 0);
   printf("replied %i bytes\n", send_i);
 

@@ -26,7 +26,7 @@ int api_recv(struct api_state *state, struct api_msg *msg) {
     substr[i] = client_msg[i];
   substr[recv_bytes] = '\0';
 
-  printf("api_recv: %i bytes from %i: %s\n", recv_bytes, state->fd, substr);
+  //printf("api_recv: %i bytes from %i: %s\n", recv_bytes, state->fd, substr);
 
   msg->received = malloc(recv_bytes);
   strcpy(msg->received, substr);
