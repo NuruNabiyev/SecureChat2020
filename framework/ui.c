@@ -23,129 +23,203 @@ void ui_state_free(struct ui_state *state) {
 void ui_state_init(struct ui_state *state) {
 
   assert(state);
+  state->loggedin = 0;
+  state->correctInput = 0;
+  
 
   /* TODO initialize ui_state */
 }
 
-char **removeSpaces(char *string) {
+void ui_process_command(struct ui_state *state)
+{
+  ui_state_init(state);
+  readLine(state);
+  state->correctInput = checkCommand(state->text,state->loggedin);
+}
+
+void readLine(struct ui_state *state)
+{
+  fgets(state->text,sizeof(state->text), stdin);
+}
+
+char** removeSpaces(char* string)
+{
   int i = 0;
   int n = strlen(string);
-  char **token = malloc(sizeof(char *) * n);
+  char** token = malloc(sizeof(char*)*n);
   const char delim[4] = "  \t\n";
   token[i] = strtok(string, delim);
 
-  while (token[i] != NULL) {
+  while(token[i] != NULL)
+  {
     i++;
     token[i] = strtok(NULL, delim);
   }
-
   return token;
+  
+}
+
+int stack_of_commands(char* string)
+{
+  if(strcmp(string,"/login") == 0) return 1;
+  if(strcmp(string,"/register") == 0) return 2;
+  if(strcmp(string,"/users") == 0) return 3;
+  if(strcmp(string,"/exit") == 0) return 4;
+  if(string[0] != '/') return 5; 
+  return 0;
 
 }
 
-int checkCommand(char *string, int loginStatus) {
+int checkCommand(char* string, int loginStatus)
+{
   //TODO: exit when eof is met
   char copyString[strlen(string)];
-  char **parsedString;
+  char** parsedString;
 
-  strcpy(copyString, string);
+  strcpy(copyString,string);
   parsedString = removeSpaces(copyString);
-  int i = returnStringArraySize(parsedString);
-
-  if (loginStatus == 0) {
-    if (*parsedString[0] == '/') {
-      if (checkLoginCommand(parsedString, i) == 0
-          && checkRegisterCommand(parsedString, i) == 0
-          && checkExitUsersCommand(parsedString, i, loginStatus) == 0) {
-      } else {
-        return 1;
-      }
-    } else {
-      //parseMessage(copyString); // todo temporarily while loginStatus is not fixed
-      return 1;
-      //printf("The / character is missing!\n");
-    }
-  } else {
-    if (strcmp(parsedString[0], "/register") == 0 || strcmp(parsedString[0], "/login") == 0) {
-      printf("You cannot login or register again as you are already logged in! \n");
-    } else if (checkExitUsersCommand(parsedString, i, loginStatus) == 0) {
-      if (parsedString[0][0] == '/') {
-        printf("This is not a valid message!\n");
-      } else {
-        parseMessage(copyString);
-      }
+  int sizeArray = returnStringArraySize(parsedString);
+  
+  if(*parsedString == NULL)
+  {
+    if(loginStatus == 0) printf("error: Unknown command! \n");
+    else printf("error: Wrong message structure or wrong command! \n");
+  }
+  else
+  {
+    switch (stack_of_commands(parsedString[0]))
+    {
+      case 1:
+        return checkLoginCommand(parsedString,sizeArray, loginStatus);
+        break;
+      
+      case 2:
+        return checkRegisterCommand(parsedString,sizeArray, loginStatus);
+        break;
+      
+      case 3:
+        return checkUsersCommand(parsedString, sizeArray, loginStatus);
+        break;
+      
+      case 4:
+        checkExitCommand(parsedString, sizeArray);
+        break;
+      
+      case 5:
+        if( loginStatus == 0) printf("error:The '/' character is missing!\n");
+        else return parseMessage(copyString);
+        break;
+      
+      default:
+        printf("error: Unknown command! \n");
+        break;
     }
   }
   return 0;
 }
 
-int returnStringArraySize(char **string) {
-  int i = 0;
-  while (string[i] != NULL) {
+
+int returnStringArraySize(char** string)
+{
+  int i=0;
+  while(string[i] != NULL)
+  {
     i++;
   }
   return i;
 }
 
-int checkLoginCommand(char **string, int i) {
-  if (strcmp(string[0], "/login") == 0) {
-    if (strcmp(string[0], "/login") == 0 && i < 4 && i > 2) {
-      return 1;
-    } else {
-      printf("error: Incorrect login command!\n");
+int checkLoginCommand(char** string,int i,int loggedin)
+{
+   if(loggedin == 0)
+    {  
+      if(i < 4 && i > 2)
+        {
+          return 1;
+        }
+        else
+        {
+          printf("error: Incorect login command!\n");
+          return 2;
+        }
     }
-  }
-  return 0;
+    else 
+      printf("error: You are already logged in! \n");
+    return 0;
 }
 
-int checkRegisterCommand(char **string, int i) {
-  if (strcmp(string[0], "/register") == 0) {
-    if (strcmp(string[0], "/register") == 0 && i < 4 && i > 2) {
-      return 1;
-    } else {
-      printf("error: Incorrect register command!\n");
+int checkRegisterCommand(char** string,int i, int loggedin)
+{
+   if(loggedin == 0)
+    {
+      if(i < 4 && i > 2)
+        {
+          return 1;
+        }
+        else
+        {
+          printf("error: Incorect register command!\n");
+        }
     }
-  }
-  return 0;
+    else 
+      printf("error: You are already registered in! \n");
+    return 0;
 }
 
-int checkExitUsersCommand(char **string, int i, int loggedin) {
-  //TODO: check hot many workers are online
-  if ((strcmp(string[0], "/exit") == 0) && i < 2) {
-    printf("The User exited the program!\n");
-    exit(0);
-  } else if ((strcmp(string[0], "/users") == 0) && i < 2) {
-    if (loggedin == 1) {
+int checkUsersCommand(char** string,int i , int loggedin)
+{
+  if(i < 2)
+  {
+    if(loggedin == 1)
+    {
+      printf("3 Users are currently logged in.\n");
       return 1;
-    } else {
+    }
+    else
+    {
       printf("error: user is not logged in!\n");
     }
   }
   return 0;
 }
 
-void removeNewLine(char *string) {
-  if (string[strlen(string) - 1] == '\n')
-    string[strlen(string) - 1] = '\0';
+
+int checkExitCommand(char** string, int i)
+{
+  if(i < 2)
+  {
+    printf("The User exited the program!\n");
+    exit(0);
+  }
+  return 0;
 }
 
-int parseMessage(char *string) {
-  //TODO: Send text as broadcast/ file and write private message with th user it send
+void removeNewLine(char* string)
+{
+  if(string[strlen(string)-1] == '\n')
+    string[strlen(string)-1] = '\0';
+}
+
+int parseMessage(char* string)
+{
   //TODO: Extract Username of the client
   removeNewLine(string);
-  if (string[0] != ' ' && string[0] != '\t'
-      && string[strlen(string) - 1] != ' '
-      && string[strlen(string) - 1] != ' ' &&
-      string[strlen(string) - 1] != '\n') {
-    if (string[0] == '@') {
-      printf("%s Hey how are you? \n", string);
-    } else {
-      //Send text to chat as a broadcast 
-      //printf("2020-11-03 18:30:00 Group9: %s \n", string);
+  if(string[0] != ' ' && string[0] != '\t' 
+      && string[strlen(string)-1] != ' ' 
+      && string[strlen(string)-1] != ' ' 
+      && string[strlen(string)-1] != '\n')
+  {
+    if(string[0] == '@')
+    {
+        printf("%s %s? \n","@user",string);
+        return 1;
+    }
+    else
+    {
+      printf("2020-11-03 18:30:00 Group9: %s \n",string);
       return 1;
     }
-  } else {
-    printf("error: Not a good message format!\n");
   }
+  else printf("error: Not a good message format!\n");
   return 0;
 }

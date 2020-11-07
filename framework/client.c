@@ -13,7 +13,6 @@ struct client_state {
     struct api_state api;
     int eof;
     struct ui_state ui;
-    int loggedIn;
 };
 
 /**
@@ -53,24 +52,14 @@ static int client_connect(struct client_state *state,
 static int client_process_command(struct client_state *state) {
 
   assert(state);
-  //TODO: Check why when using read it dumps memory 
-  //TODO: see if text can be dynamically alocated or can be put in a struct
+  
+  ui_process_command(&state->ui);
 
-  //here the text is a varibale. maybe place it in a struct? 
-  char text[500];
-
-  //Modify this to see how it works in both states 
-  // 0 -> not loggedin; 1 -> loggedin
-  state->loggedIn = 0;
-  fgets(text, sizeof(text), stdin);
-
-  // todo somehow loggedIn info is not saved
-  //printf("login status: %i\n", state->loggedIn);
-  int c = checkCommand(text, state->loggedIn);
-  if (c == 1) {
-    send(state->api.fd, text, strlen(text), 0);
-    //printf("sent %i bytes to %i: %s\n", send_i, state->api.fd, text);
-  }
+  if(state->ui.correctInput == 1)
+  {
+    int send_i = send(state->api.fd, state->ui.text, strlen(state->ui.text), 0);
+    printf("sent %i bytes to %i: %s\n", send_i, state->api.fd, text);
+  }\
   return 0;
 }
 
@@ -83,18 +72,8 @@ static int execute_request(
         struct client_state *state,
         const struct api_msg *msg) {
 
-  /* TODO check properly, this is just easy way to handle login/registration/messages */
-  if (strstr(msg->received, "You have been registered!") != NULL) {
-    state->loggedIn = 1;
-    printf("registration succeeded\n");
-  }
-  else if (strstr(msg->received, "You have been logged in!") != NULL) {
-    state->loggedIn = 1;
-    printf("authentication succeeded\n");
-  } else {
-    // process public message
-    printf("%s\n", msg->received);
-  }
+  /* TODO handle request and reply to client */
+  printf("TODO PROCESS this: %s\n", msg->received);
 
   return 0;
 }
