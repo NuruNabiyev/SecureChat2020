@@ -1,6 +1,7 @@
 .PHONY: all clean
 
-CFLAGS=-g -Wall -Werror -UDEBUG
+#CFLAGS=-g -Wall -Werror -UDEBUG
+CFLAGS=-g -UDEBUG
 LDLIBS=-lsqlite3 -lcrypto -lssl
 
 all: client server

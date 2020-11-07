@@ -16,11 +16,11 @@
 #include "worker.h"
 
 struct worker_state {
-  struct api_state api;
-  int eof;
-  int server_fd;  /* server <-> worker bidirectional notification channel */
-  int server_eof;
-  /* TODO worker state variables go here */
+    struct api_state api;
+    int eof;
+    int server_fd;  /* server <-> worker bidirectional notification channel */
+    int server_eof;
+    /* TODO worker state variables go here */
 };
 
 /**
@@ -28,8 +28,19 @@ struct worker_state {
  *        the client.
  */
 static int handle_s2w_notification(struct worker_state *state) {
-  /* TODO implement the function */
-  return -1;
+  // todo only broadcasting implemented for now
+  db_rc = sqlite3_open("chat.db", &db);
+  char *db_sql = "SELECT message FROM global_chat ORDER by id DESC LIMIT 1;";
+  sqlite3_prepare_v2(db, db_sql, strlen(db_sql), &db_stmt, NULL);
+
+  // will be looped once
+  while ((db_rc = sqlite3_step(db_stmt)) == SQLITE_ROW) {
+    const unsigned char *last_msg = sqlite3_column_text(db_stmt, 0);
+    int send_i = send(state->api.fd, last_msg, strlen(last_msg), 0);
+    printf("replied %i bytes\n", send_i);
+  }
+  sqlite3_finalize(db_stmt);
+  return 0;
 }
 
 /**
@@ -60,16 +71,15 @@ static int notify_workers(struct worker_state *state) {
  * @param msg     Message to handle
  */
 static int execute_request(
-  struct worker_state *state,
-  const struct api_msg *msg) {
+        struct worker_state *state,
+        const struct api_msg *msg) {
 
-  char* text;
+  char *text;
 
   /* TODO check properly, this is just easy way to handle login/registration/messages */
   if (strstr(msg->received, "/register") != NULL) {
     text = "You have been registered!";
-  }
-  else if (strstr(msg->received, "/login") != NULL) {
+  } else if (strstr(msg->received, "/login") != NULL) {
     text = "You have been logged in!";
   } else {
     printf("received global: %s\n", msg->received);
@@ -78,20 +88,29 @@ static int execute_request(
     char *user = "group 9:";  //todo extract from db
     char *main_msg = (char *) malloc(strlen(msg->received) + strlen(curr_time) + strlen(user));
     sprintf(main_msg, "%s %s %s", curr_time, user, msg->received);
-    printf("%s", main_msg);
-    text = main_msg;
-//    db_sql = (char *) malloc(strlen(msg->received)+200);
-//    sprintf(db_sql, "INSERT INTO global_chat (message) VALUES (\"%s\");\n", msg->received);
-//    sqlite3_prepare_v2(db, db_sql, strlen(db_sql), &db_stmt, NULL);
-//    db_rc = sqlite3_step(db_stmt);
-//    if (db_rc == SQLITE_DONE) {
-//      // send to client
-//      printf("entered into db!\n");
-//      //int sid = send(conn_fd, actual_payload, strlen(actual_payload), 0);
-//    } else {
-//      printf("ERROR in adding message to table: %s\n", sqlite3_errmsg(db));
-//    }
 
+    // need to truncate newline
+    char *newMain = (char *) malloc(strlen(main_msg) - 1);
+    strncpy(newMain, main_msg, strlen(main_msg) - 1);
+
+    db_rc = sqlite3_open("chat.db", &db);
+    if (db_rc != SQLITE_OK) {
+      puts("Could not open database");
+      return 1;
+    }
+
+    char *sql_format = "INSERT INTO global_chat (message) VALUES (\"%s\");";
+    db_sql = (char *) malloc(strlen(sql_format) + strlen(newMain) + 5);
+    sprintf(db_sql, sql_format, newMain);
+    sqlite3_prepare_v2(db, db_sql, strlen(db_sql), &db_stmt, NULL);
+    db_rc = sqlite3_step(db_stmt);
+    if (db_rc == SQLITE_DONE) {
+      notify_workers(state);
+    } else {
+      printf("ERROR in adding message to table: %s\n", sqlite3_errmsg(db));
+    }
+
+    return 0;
     // add to db and ask every worker to broadcast
   }
   int send_i = send(state->api.fd, text, strlen(text), 0);
@@ -177,7 +196,7 @@ static int handle_incoming(struct worker_state *state) {
   fdmax = max(state->api.fd, state->server_fd);
 
   /* wait for at least one to become ready */
-  r = select(fdmax+1, &readfds, NULL, NULL, NULL);
+  r = select(fdmax + 1, &readfds, NULL, NULL, NULL);
   if (r < 0) {
     if (errno == EINTR) return 0;
     perror("error: select failed");
@@ -206,9 +225,9 @@ static int handle_incoming(struct worker_state *state) {
  *
  */
 static int worker_state_init(
-  struct worker_state *state,
-  int connfd,
-  int server_fd) {
+        struct worker_state *state,
+        int connfd,
+        int server_fd) {
 
   /* initialize */
   memset(state, 0, sizeof(*state));
@@ -228,7 +247,7 @@ static int worker_state_init(
  *
  */
 static void worker_state_free(
-  struct worker_state *state) {
+        struct worker_state *state) {
   /* TODO any additional worker state cleanup */
 
   /* clean up API state */
@@ -250,8 +269,8 @@ static void worker_state_free(
  */
 __attribute__((noreturn))
 void worker_start(
-  int connfd,
-  int server_fd) {
+        int connfd,
+        int server_fd) {
   struct worker_state state;
   int success = 1;
 
@@ -269,7 +288,7 @@ void worker_start(
     }
   }
 
-cleanup:
+  cleanup:
   /* cleanup worker */
   /* TODO any additional worker cleanup */
   worker_state_free(&state);
