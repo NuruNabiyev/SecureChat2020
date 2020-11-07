@@ -28,7 +28,7 @@ int api_recv(struct api_state *state, struct api_msg *msg) {
 
   //printf("api_recv: %i bytes from %i: %s\n", recv_bytes, state->fd, substr);
 
-  msg->received = malloc(recv_bytes);
+  msg->received = malloc(sizeof(char *) * recv_bytes);
   strcpy(msg->received, substr);
 
   if (recv_bytes > 0) return 1;
@@ -43,7 +43,7 @@ int api_recv(struct api_state *state, struct api_msg *msg) {
 void api_recv_free(struct api_msg *msg) {
 
   assert(msg);
-
+  free(msg->received);
   /* TODO clean up state allocated for msg */
 }
 
