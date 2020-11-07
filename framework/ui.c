@@ -12,7 +12,8 @@ void ui_state_free(struct ui_state *state) {
 
   assert(state);
   //clean conversation
-
+  state->loggedin = 0;
+  state->correctInput = 0;
   /* TODO free ui_state */
 }
 
@@ -116,7 +117,7 @@ int checkCommand(struct ui_state *state)
       
       case 5:
         if( state->loggedin == 0) printf("error: you are not yet logged in!\n");
-        else return parseMessage(copyString);
+        else return parseMessage(state->text);
         break;
       
       default:
