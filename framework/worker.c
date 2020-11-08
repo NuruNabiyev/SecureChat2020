@@ -66,57 +66,90 @@ static int notify_workers(struct worker_state *state) {
 }
 
 /**
+ * Inserts global message to db
+ * @return 1 if failed, 0 if all ok
+ */
+static int insert_global(struct worker_state *state,
+                         const struct api_msg *msg) {
+  char *curr_time = get_current_time();
+  char *user = "group 9:";  //todo extract from db
+  char *main_msg = (char *) malloc(strlen(msg->received) + strlen(curr_time) + strlen(user));
+  sprintf(main_msg, "%s %s %s", curr_time, user, msg->received);
+
+  // need to truncate newline
+  char *newMain = (char *) malloc(strlen(main_msg) - 1);
+  strncpy(newMain, main_msg, strlen(main_msg) - 1);
+
+  db_rc = sqlite3_open("chat.db", &db);
+  if (db_rc != SQLITE_OK) {
+    puts("Could not open database");
+    return 1;
+  }
+
+  // SQL Query vulnerable to SQL Injection, will fix with parameterised query
+  // using sqlite3_bind_text() in coming deadline.
+  char *sql_format = "INSERT INTO global_chat (message) VALUES (\"%s\");";
+  db_sql = (char *) malloc(strlen(sql_format) + strlen(newMain) + 5);
+  sprintf(db_sql, sql_format, newMain);
+  sqlite3_prepare_v2(db, db_sql, strlen(db_sql), &db_stmt, NULL);
+  db_rc = sqlite3_step(db_stmt);
+  if (db_rc == SQLITE_DONE) {
+    notify_workers(state);
+  } else {
+    printf("ERROR in adding message to table: %s\n", sqlite3_errmsg(db));
+  }
+
+  return 0;
+}
+
+/**
+ * Query all messages and send to that client
+ * @return 0 on success
+ */
+static int send_all_messages(struct worker_state *state) {
+  db_rc = sqlite3_open("chat.db", &db);
+  char *db_sql = "SELECT message FROM global_chat;";
+  sqlite3_prepare_v2(db, db_sql, strlen(db_sql), &db_stmt, NULL);
+
+  // todo gather to single payload and send?
+  while ((db_rc = sqlite3_step(db_stmt)) == SQLITE_ROW) {
+    char payload[500];
+    const unsigned char *curr_msg = sqlite3_column_text(db_stmt, 0);
+
+    strcpy(payload, curr_msg);
+    strcat(payload, "\n");
+
+    send(state->api.fd, payload, strlen(payload), 0);
+  }
+  sqlite3_finalize(db_stmt);
+  return 0;
+}
+
+/**
  * @brief         Handles a message coming from client
  * @param state   Initialized worker state
  * @param msg     Message to handle
  */
-static int execute_request(
-        struct worker_state *state,
-        const struct api_msg *msg) {
+static int execute_request(struct worker_state *state,
+                           const struct api_msg *msg) {
 
   char *text;
 
   /* TODO check properly, this is just easy way to handle login/registration/messages */
   if (strstr(msg->received, "/register") != NULL) {
     text = "You have been registered!";
+    int send_i = send(state->api.fd, text, strlen(text), 0);
+    printf("replied %i bytes\n", send_i);
+    send_all_messages(state);
   } else if (strstr(msg->received, "/login") != NULL) {
     text = "You have been logged in!";
+    int send_i = send(state->api.fd, text, strlen(text), 0);
+    printf("replied %i bytes\n", send_i);
+    send_all_messages(state);
   } else {
-    printf("received global: %s\n", msg->received);
-
-    char *curr_time = get_current_time();
-    char *user = "group 9:";  //todo extract from db
-    char *main_msg = (char *) malloc(strlen(msg->received) + strlen(curr_time) + strlen(user));
-    sprintf(main_msg, "%s %s %s", curr_time, user, msg->received);
-
-    // need to truncate newline
-    char *newMain = (char *) malloc(strlen(main_msg) - 1);
-    strncpy(newMain, main_msg, strlen(main_msg) - 1);
-
-    db_rc = sqlite3_open("chat.db", &db);
-    if (db_rc != SQLITE_OK) {
-      puts("Could not open database");
-      return 1;
-    }
-
-    // SQL Query vulnerable to SQL Injection, will fix with parameterised query
-    // using sqlite3_bind_text() in coming deadline.
-    char *sql_format = "INSERT INTO global_chat (message) VALUES (\"%s\");";
-    db_sql = (char *) malloc(strlen(sql_format) + strlen(newMain) + 5);
-    sprintf(db_sql, sql_format, newMain);
-    sqlite3_prepare_v2(db, db_sql, strlen(db_sql), &db_stmt, NULL);
-    db_rc = sqlite3_step(db_stmt);
-    if (db_rc == SQLITE_DONE) {
-      notify_workers(state);
-    } else {
-      printf("ERROR in adding message to table: %s\n", sqlite3_errmsg(db));
-    }
-
-    return 0;
     // add to db and ask every worker to broadcast
+    return insert_global(state, msg);
   }
-  int send_i = send(state->api.fd, text, strlen(text), 0);
-  printf("replied %i bytes\n", send_i);
 
   return 0;
 }
