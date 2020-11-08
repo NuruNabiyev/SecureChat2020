@@ -27,4 +27,13 @@ Communication Type | Description
 -------------------|-------------
 Client <-> worker  | Communication over TCP socket
 Worker <-> server  | Communication over File Descriptors
-Server <-> Database| Communication using SQL queries
+Server <-> database| Communication using SQL queries
+
+
+## 2. Server Program
+The server program serves as a central point of communication within the architecture. It is responsible for managing all incoming and outgoing communication and allows multiple clients to talk to each other over a centralized instance. While it does not handle incoming client messages directly itself, it is responsible for spawning new worker processes, enabling multiple workers to communicate with eachother, creating the database and so on. 
+
+### 2.1 Worker Processes
+As mentioned, the server is responsible for spawning worker processes that handle the incoming and outgoing client communication. 
+
+## 3. Client Program
