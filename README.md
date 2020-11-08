@@ -3,7 +3,7 @@ Secure Chat app for Secure Programming 2020 course
 
 
 # Documentation
-The underneath text forms the documentation of the SecureChat program developed for the Secure Programming course of the Deep Programming minor academic year '20/'21. All functionality and design decisions are documented in here and are structured as follows:
+The underneath text forms the documentation of the SecureChat program developed for the Secure Programming course of the Deep Programming minor academic year '20/'21. The software is developed in C. All functionality and design decisions are documented in here and are structured as follows:
 
 	1. Architecture
 	2. Server program
@@ -74,8 +74,10 @@ Command | Description
 /users | Prints the amount of online users
 /exit | Exits the client program
 
-
-
 ## 4. Security
-`worker.c line 91 insert_global()`
-We are aware of the double free vulnerability
+Because this is only the first phase of development and requires the functionality only, no security implementations have been made so far. However, in order to ensure no vulnerabilities created are overlooked or forgotten, the list underneath is kept to ensure all vulnerabilities will be fixed before the third deadline. 
+
+- [] Fix the SQL Injection vulnerability by parameterizing the query at `worker.c line 91`.
+- [] Fix the use after free vulnerability in `worker.c` (yet to be located).
+- [] Fix the nullbyte injection vulnerability in `worker.c`.
+- [] Fix the buffer overflow vulnerability on client input and worker handler with bounds-checking.
