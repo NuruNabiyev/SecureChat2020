@@ -36,7 +36,7 @@ Usage:
 	./server <port>
 ```
 
-The server program serves as a central point of communication within the architecture. It is responsible for managing all incoming and outgoing communication and allows multiple clients to talk to each other over a centralized instance. While it does not handle incoming client messages directly itself, it is responsible for spawning new worker processes, enabling multiple workers to communicate with eachother, creating the database and so on. 
+The server program serves as a central point of communication within the architecture. It is responsible for managing all incoming and outgoing communication and allows multiple clients to talk to each other over a centralized instance. While it does not handle incoming client messages directly itself, it is responsible for spawning new worker processes, enabling multiple workers to communicate with eachother, creating the database and so on. The server allows a total of 16 clients at once.
 
 ### 2.1 Worker Processes
 As mentioned, the server is responsible for spawning worker processes that handle the incoming and outgoing client communication. Every time a client connects to the server address, the server forks off a child process that becomes a worker. This worker can communicate with the client over a TCP socket. Whenever the client sends a command or message, the worker process that corresponds to the sending client receives the message or command over the socket using the `api_recv()` function, after which it is executed appropriately using the `execute_request()` function (file `worker.c line 133`). This includes (but is not limited to) logging in, registering users and handling regular messages.
@@ -45,7 +45,25 @@ Whenever a regular message is received, the worker does not communicate this mes
 
 ![Figure 2 - Communication Cycle](docs/servercycle.png)
 
+### 2.2 Creation of the database
+In order for the workers to store messages in the database, the server must create this database if it does not exist yet. For now, this is done in the `main()` function of `server.c (line 372)`. The filename of the database is `chat.db` and consists of a table called `global_chat` with the following columns:
+
+	* id (primary key)
+	* Message
+
+In the future, this could be expanded using a separate column for timestamp, username (foreign key) and chat ID (foreign key). The desired database layout is shown in figure 3 and allows for added security by salting user passwords if a separate user table is made and separate chat logs such as private chat messages.
+
+![Figure 3 - Database setup](docs/database.png)
+ 
+
 ## 3. Client Program
+```
+Usage:
+	./client <server address> <server port>
+```
+
+
 
 ## 4. Security
 `worker.c line 91 insert_global()`
+We are aware of the double free vulnerability
