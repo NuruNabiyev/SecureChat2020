@@ -62,6 +62,18 @@ Usage:
 	./client <server address> <server port>
 ```
 
+The client program can be used by a user to connect to the server and send messages to other users. It does so by connecting to the server with a TCP socket, unaware of the presence of the worker processes. Its only concern is parsing user commands, writing its message over the socket and handling the response. In the future, an extra task will be added which involves the storing of other client's public keys for use. This is due when cryptography is implemented. Communication with the workers is done through the API-interface provided by the framework, which allows the client to store information about the message and send this to the server.
+
+### 3.1 Command Parsing
+For the parsing and handling of user commands, the client uses the file `ui.c`. This file contains all the possible user commands (also listed in table 1) and performs the necessary checks before executing them. Right now, the only functionality provided by parsing is the ability to set the state indicating a client is 'logged in' and exiting the program. Furthermore, empty messages are not allowed and a user is not allowed to send messages before being logged in.
+
+Command | Description
+--------|-------------
+/login <username> <password> | Allow the user to log in
+/register <username> <password> | Allow the user to register a new account, user is logged in automatically after registering
+/users | Prints the amount of online users
+/exit | Exits the client program
+
 
 
 ## 4. Security
