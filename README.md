@@ -48,8 +48,8 @@ Whenever a regular message is received, the worker does not communicate this mes
 ### 2.2 Creation of the database
 In order for the workers to store messages in the database, the server must create this database if it does not exist yet. For now, this is done in the `main()` function of `server.c (line 372)`. The filename of the database is `chat.db` and consists of a table called `global_chat` with the following columns:
 
-	* id (primary key)
-	* Message
+	- id (primary key)
+	- Message
 
 In the future, this could be expanded using a separate column for timestamp, username (foreign key) and chat ID (foreign key). The desired database layout is shown in figure 3 and allows for added security by salting user passwords if a separate user table is made and separate chat logs such as private chat messages.
 
@@ -77,7 +77,7 @@ Command | Description
 ## 4. Security
 Because this is only the first phase of development and requires the functionality only, no security implementations have been made so far. However, in order to ensure no vulnerabilities created are overlooked or forgotten, the list underneath is kept to ensure all vulnerabilities will be fixed before the third deadline. 
 
-- [] Fix the SQL Injection vulnerability by parameterizing the query at `worker.c line 91`.
-- [] Fix the use after free vulnerability in `worker.c` (yet to be located).
-- [] Fix the nullbyte injection vulnerability in `worker.c`.
-- [] Fix the buffer overflow vulnerability on client input and worker handler with bounds-checking.
+- [ ] Fix the SQL Injection vulnerability by parameterizing the query at `worker.c line 91`.
+- [ ] Fix the use after free vulnerability in `worker.c` (yet to be located).
+- [ ] Fix the nullbyte injection vulnerability in `worker.c`.
+- [ ] Fix the buffer overflow vulnerability on client input and worker handler with bounds-checking.
