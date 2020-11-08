@@ -113,10 +113,7 @@ int checkCommand(char *string, int loginStatus) {
       printf("Error: unknown command.\n");
       break;
   }
-
-
-
-
+  
   return 0;
 }
 
