@@ -78,10 +78,9 @@ Command | Description
 Because this is only the first phase of development and requires the functionality only, no security implementations have been made so far. However, in order to ensure no vulnerabilities created are overlooked or forgotten, the list underneath is kept to ensure all vulnerabilities will be fixed before the third deadline. 
 
 - [ ] Fix the SQL Injection vulnerability by parameterizing the query at `worker.c line 91`.
-- [ ] Fix the use after free vulnerability in `worker.c` (yet to be located).
+- [ ] Fix the double free bug in `worker.c` (yet to be located).
 - [ ] Fix the nullbyte injection vulnerability in `worker.c`.
 - [ ] Fix the buffer overflow vulnerability on client input and worker handler with bounds-checking.
-
 
 
 ## Notes
