@@ -168,8 +168,8 @@ int parseMessage(char *string) {
       && string[strlen(string)-1] != '\t') {
     if (string[0] == '@') {
       printf("%s Hey how are you? \n", string);
+      return 1;
     } else {
-      //Send text to chat as a broadcast 
       //printf("2020-11-03 18:30:00 Group9: %s \n", string);
       return 1;
     }
