@@ -79,7 +79,7 @@ Because this is only the first phase of development and requires the functionali
 
 - [ ] Fix the SQL Injection vulnerability by parameterizing the query at `worker.c line 91`.
 - [ ] Fix the double free bug in `worker.c` (yet to be located).
-- [ ] Fix the nullbyte injection vulnerability in `worker.c`.
+- [x] Fix the nullbyte injection vulnerability in `worker.c`.
 - [ ] Fix the buffer overflow vulnerability on client input and worker handler with bounds-checking.
 
 
