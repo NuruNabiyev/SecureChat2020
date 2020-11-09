@@ -57,11 +57,6 @@ int checkCommand(char *string, int loginStatus) {
   char copyString[strlen(string)];
   char **parsedString;
 
-  if (strcmp(string, "\n") == 0 || strcmp(string, "\0") == 0) {
-    printf("Message cannot be empty.\n");
-    return 0;
-  }
-
   strcpy(copyString, string);
   parsedString = removeSpaces(copyString);
   int i = returnStringArraySize(parsedString);
