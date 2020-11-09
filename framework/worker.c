@@ -77,8 +77,9 @@ static int insert_global(struct worker_state *state,
   sprintf(main_msg, "%s %s %s", curr_time, user, msg->received);
 
   // need to truncate newline
-  char *newMain = (char *) malloc(strlen(main_msg) - 1);
-  strncpy(newMain, main_msg, strlen(main_msg) - 1);
+  char *newMain = (char *) malloc(strlen(main_msg));
+  // strcpy(newMain, main_msg, strlen(main_msg));
+  strcpy(newMain, main_msg);
 
   db_rc = sqlite3_open("chat.db", &db);
   if (db_rc != SQLITE_OK) {
@@ -146,7 +147,9 @@ static int execute_request(struct worker_state *state,
     int send_i = send(state->api.fd, text, strlen(text), 0);
     printf("replied %i bytes\n", send_i);
     send_all_messages(state);
-  } else {
+  }  else if (strstr(msg->received, "/users") != NULL) {
+    text = "There are X users logged in!";
+  }else {
     // add to db and ask every worker to broadcast
     return insert_global(state, msg);
   }

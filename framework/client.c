@@ -88,6 +88,7 @@ static int execute_request(
     state->loggedIn = 1;
     printf("authentication succeeded\n");
   } else {
+    if(state->loggedIn ==1)
     // process public message
     printf("%s\n", msg->received);
   }

@@ -66,54 +66,35 @@ int checkCommand(char *string, int loginStatus) {
   parsedString = removeSpaces(copyString);
   int i = returnStringArraySize(parsedString);
 
- /* if (loginStatus != 1) {
-    if (*parsedString[0] == '/') {
-      if (checkLoginCommand(parsedString, i) == 0
-          && checkRegisterCommand(parsedString, i) == 0
-          && checkExitUsersCommand(parsedString, i, loginStatus) == 0) {
-      } else {
-        return 1;
-      }
-    } else {
-      parseMessage(copyString); // todo temporarily while loginStatus is not fixed
-      return 1;
-      //printf("The / character is missing!\n");
-    }
-  } else {
-    if (strcmp(parsedString[0], "/register") == 0 || strcmp(parsedString[0], "/login") == 0) {
-      printf("You cannot login or register again as you are already logged in! \n");
-    } else if (checkExitUsersCommand(parsedString, i, loginStatus) == 0) {
-      if (parsedString[0][0] == '/') {
-        printf("This is not a valid message!\n");
-      } else {
-        parseMessage(copyString);
-      }
-    }
-  }*/
-
-  switch (stack_of_commands(parsedString[0])) {
-    case 1:
-      return checkLoginCommand(parsedString, i, loginStatus);
-
-    case 2: 
-      return checkRegisterCommand(parsedString, i, loginStatus);
-
-    case 3:
-      return checkUsersCommand(i, loginStatus);
-
-    case 4:
-      return checkExitCommand(parsedString, i, loginStatus);
-
-    case 5:
-      if (!loginStatus) printf("Error, you are not logged in.\n");
-      else return parseMessage(copyString);
-      break;
-
-    default:
-      printf("Error: unknown command.\n");
-      break;
+  if(parsedString[0] == NULL)
+  {
+    printf("error: Empty messages are not allowed! \n");
   }
-  
+  else
+  {
+    switch (stack_of_commands(parsedString[0])) {
+      case 1:
+        return checkLoginCommand(parsedString, i, loginStatus);
+
+      case 2: 
+        return checkRegisterCommand(parsedString, i, loginStatus);
+
+      case 3:
+        return checkUsersCommand(i, loginStatus);
+
+      case 4:
+        return checkExitCommand(parsedString, i, loginStatus);
+
+      case 5:
+        if (!loginStatus) printf("Error, you are not logged in.\n");
+        else return parseMessage(copyString);
+        break;
+
+      default:
+        printf("Error: unknown command.\n");
+        break;
+    }
+  }
   return 0;
 }
 
@@ -185,13 +166,11 @@ void removeNewLine(char *string) {
 }
 
 int parseMessage(char *string) {
-  //TODO: Send text as broadcast/ file and write private message with th user it send
-  //TODO: Extract Username of the client
+
   removeNewLine(string);
   if (string[0] != ' ' && string[0] != '\t'
-      && string[strlen(string) - 1] != ' '
-      && string[strlen(string) - 1] != ' ' &&
-      string[strlen(string) - 1] != '\n') {
+      && string[strlen(string)-1] != ' '
+      && string[strlen(string)-1] != '\t') {
     if (string[0] == '@') {
       printf("%s Hey how are you? \n", string);
     } else {
