@@ -71,7 +71,7 @@ Command | Description
 --------|-------------
 /login <username> <password>\* | Allow the user to log in
 /register <username> <password>\* | Allow the user to register a new account, user is logged in automatically after registering
-/users | Prints the amount of online users\*
+/users\* | Prints the amount of online users\*
 /exit | Exits the client program
 
 ## 4. Security
