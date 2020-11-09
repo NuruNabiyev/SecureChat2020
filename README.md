@@ -69,9 +69,9 @@ For the parsing and handling of user commands, the client uses the file `ui.c`. 
 
 Command | Description
 --------|-------------
-/login <username> <password> | Allow the user to log in
-/register <username> <password> | Allow the user to register a new account, user is logged in automatically after registering
-/users | Prints the amount of online users
+/login <username> <password>\* | Allow the user to log in
+/register <username> <password>\* | Allow the user to register a new account, user is logged in automatically after registering
+/users | Prints the amount of online users\*
 /exit | Exits the client program
 
 ## 4. Security
@@ -81,3 +81,8 @@ Because this is only the first phase of development and requires the functionali
 - [ ] Fix the use after free vulnerability in `worker.c` (yet to be located).
 - [ ] Fix the nullbyte injection vulnerability in `worker.c`.
 - [ ] Fix the buffer overflow vulnerability on client input and worker handler with bounds-checking.
+
+
+
+## Notes
+In the commands table, a few commands are marked. These are commands that the client program will be able to parse, but of which the functionality has not actually been implemented yet. The login and register commands show very similar behaviour due to the abstraction of a user not being implemented yet. The users function returns a fixed message because of this exact reason.
