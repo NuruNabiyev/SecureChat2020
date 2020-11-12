@@ -91,7 +91,7 @@ In the commands table, a few commands are marked. These are commands that the cl
 
 # Assignment 1.B - Security by Design
 
-## Security Properties of Encryption
+## Use of Encryption
 In the below image, an overview is given of the earlier presented architecture in combination with the applied encryption. There are, wherever required, two types of encryption used; a hybrid encryption scheme and an asymmetric encryption scheme. The hybrid encryption scheme is used for the messaging protocol and utilizes RSA (asymmetric) and AES (symmetric) to mitigate the overhead of using RSA only. Communication regarding key management can be done with asymmetric encryption only.
 
 ![Figure 4 - Applied Cryptography](docs/crypto-arch.png)
@@ -113,7 +113,7 @@ While data has to be secured in transit, it also has to be secured in rest. Or a
 ### Sender Verification
 It is important to ensure the confidentiality and integrity of a message, but sometimes, the sender has to be verified as well. This can be done using signature verification (not shown in the figure). Before sending the message, the sender hashes the message and encrypts it with their private key. Then, the message (including the digital signature) is sent to the recipient, who may verify the sender by hashing the obtained message and decrypting the signature with the recipients public key. If the resulting hashes match, the sender is verified. This is implemented for all client to client communication.
 
-
+## Key Management
 
 
 
