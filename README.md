@@ -85,3 +85,17 @@ Because this is only the first phase of development and requires the functionali
 
 ## Notes
 In the commands table, a few commands are marked. These are commands that the client program will be able to parse, but of which the functionality has not actually been implemented yet. The login and register commands show very similar behaviour due to the abstraction of a user not being implemented yet. The users function returns a fixed message because of this exact reason.
+
+
+
+
+# Assignment 1.B - Security by Design
+
+## Security Properties of Encryption
+In the below image, an overview is given of the earlier presented architecture in combination with the applied encryption. There are, wherever required, two types of encryption used; a hybrid encryption scheme and an asymmetric encryption scheme. The hybrid encryption scheme is used for the messaging protocol and utilizes RSA (asymmetric) and AES (symmetric) to mitigate the overhead of using RSA only. Communication regarding key management can be done with asymmetric encryption only.
+
+![Figure 4 - Applied Cryptography](docs/crypto-arch.png)
+
+
+
+
