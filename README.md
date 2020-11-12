@@ -118,7 +118,7 @@ In order to enable different parties to communicate with each other securely, so
 
 ## Security Properties
 
-The Threat model which affects our project has the following capabilities:
+The threat model that affects our project has the following capabilities:
 
 Threat Model | 
 --------|
@@ -131,57 +131,58 @@ Perform these actions any number of times, possibly simultaneously.|
 
 ### Our Security Measures
 
-In this section we will describe how our secure design implementation will protect the client data and application against the capabilities of the threat model, Mallory.
+In this section we will describe how our security design will protect the client data and application against the capabilities of the threat actor, Mallory.
 
-##### 1. Determine at which addresses all clients and the server are running
-The threat actor, Mallory, has the ability to find out the address of both the clients and server or already knows them. In our design of the application we will secure all the communication channels between client, server and Trusted Third Party (TTP) using a hybrid encryption. Hence, even if Mallory knows the addresses of the clients and server, she will not able to see the communication between them.  
-
-This coincides with the following security properties described in Section 7.2:
-•Mallory cannot get information about direct messages for which she is not either the sender or the intended recipient.
-
-##### 2. Read, modify, inject, and/or block data sent over any network connection between a client and the server.
-The threat actor has the ability to intercept a communication and modify, read, inject and/or block data over the network. As mentioned in the previous capability the communication and data sent between the client and server will be encrypted. Therefore, Mallory will be able to read just the cyphertext and not the actual plaintext of the message, which does not disclose any information. 
-When it comes to injecting and modifying the data sent by the client or server will result in the cyphertext being modified. By doing so, when the recipient receives the message and tries to decrypt it, it will fail. Resulting in dropping the actual data/package. 
-The only capability which Mallory can perform is blocking the message itself, which our program does not solve. However, in this assignment it is not required to provide availability, thus, it will not be considered.
+#### 1. Determine at which addresses all clients and the server are running
+Mallory has the ability to find out the address of both the clients and server or already knows them. In our design of the application we will secure all the communication channels between client, server and Trusted Third Party using a hybrid encryption scheme. Hence, even if Mallory knows the addresses of the clients and server, she will not able to see read or modify the communication between them.  
 
 This coincides with the following security properties described in Section 7.2:
-• Mallory cannot get information about direct messages for which she is not either the sender or the intended recipient.
-• Mallory cannot send messages on behalf of another user.
-• Mallory cannot modify messages sent by other user
-##### 3. Establish a connection with any client or the server, spoofing her network address to any possible value.
+ * Mallory cannot get information about direct messages for which she is not either the sender or the intended recipient.
+
+#### 2. Read, modify, inject, and/or block data sent over any network connection between a client and the server.
+The threat actor has the ability to intercept communication and modify, read, inject and/or block data over the network. As mentioned in the previous section, the data sent between the client and server will be encrypted. Therefore, Mallory will be able to read the cyphertext only and not the actual plaintext of the message, ensuring confidentiality of the messages. 
+When it comes to injecting and modifying the data, this will only result in the cyphertext being modified. By doing so, when the recipient receives the message and tries to decrypt it, it will fail. This ultimately results in a breach of availability. 
+The only capability which Mallory can perform is blocking the message itself, which our program does not solve. However, in this assignment it is not required to provide availability. Thus, it will not be taken into account for this matter.
+
+This coincides with the following security properties described in Section 7.2:
+ * Mallory cannot get information about direct messages for which she is not either the sender or the intended recipient.
+ * Mallory cannot send messages on behalf of another user.
+ * Mallory cannot modify messages sent by other user
+
+#### 3. Establish a connection with any client or the server, spoofing her network address to any possible value.
 Mallory will be able to connect with a client or server, by spoofing her network address to any possible value.
-In our design we will check the identity of each sender by using digital signatures. The logic behind it is at follows: We will embed in each message send a digital signature created by a hashing algorithm (in our case SHA256) and encrypting it with the sender private key. When it reaches the recipient, he will hash the message and decrypt the cypher text. Then, check if the two values of the two hashes are the same. If not, the message was not sent by the actual sender. Hence, the it will be dropped.
+In our design, we will check the identity of each sender by using digital signatures. The logic behind signature verification was earlier explained in its own paragraph.
 
 This coincides with the following security properties described in Section 7.2:
-•Mallory cannot get information about direct messages for which she is not
+ * Mallory cannot get information about direct messages for which she is not
 either the sender or the intended recipient.
-• Mallory cannot send messages on behalf of another user.
+ * Mallory cannot send messages on behalf of another user.
 
-##### 4. Implement a malicious client to attack either the server or other clients by sending specially crafted data.
+#### 4. Implement a malicious client to attack either the server or other clients by sending specially crafted data.
 The threat actor is able to create a malicious client to attack either the server or client with specially crafted data.
-Our design of the application will perform data escaping and sanitization, on the server and client side, which will disallow any incorrect or abnormal input. Furthermore, our design will perform error handling which will inform the user of their mistake without exposing any unwanted information.
+Our design of the application includes data escaping and sanitization on the server and client side, which will disallow any incorrect or abnormal input. Furthermore, our design includes handling which will inform the user of their mistake without exposing any unwanted information.
 
 This coincides with the following security properties described in Section 7.2:
-•Mallory cannot find out users’ passwords or private keys (even if the server is compromised).
-• Mallory cannot use the client or server programs to achieve privilege escalation on the systems they are running on.
-• Mallory cannot leak or corrupt data in the client or server programs.
-• Mallory cannot crash the client or server programs.
-• The programs must never expose any information from the systems they run on, beyond what is required for the program to meet the requirements in the assignments.
+ * Mallory cannot find out user's passwords or private keys (even if the server is compromised).
+ * Mallory cannot use the client or server programs to achieve privilege escalation on the systems they are running on.
+ * Mallory cannot leak or corrupt data in the client or server programs.
+ * Mallory cannot crash the client or server programs.
+ * The programs must never expose any information from the systems they run on, beyond what is required for the program to meet the requirements in the assignments.
     
-##### 5. Implement a malicious server and get clients to connect to it instead of the intended server, to attack clients by sending specially crafted data.
+#### 5. Implement a malicious server and get clients to connect to it instead of the intended server, to attack clients by sending specially crafted data.
 The threat actor is able to create a malicious server to get clients to connect to it and send specially crafted data to them.
-Our design of the application will perform data escaping and sanitization, on the server and client side, which will disallow any incorrect or abnormal input. Furthermore, our design will perform error handling which will inform the user of their mistake without exposing any unwanted information.
+Our design of the application will perform data escaping and sanitization, on the server and client side, which will disallow any incorrect or abnormal input. Furthermore, our design includes error handling which will inform the user of their mistake without exposing any unwanted information.
 
 This coincides with the following security properties described in Section 7.2:
-•Mallory cannot find out users’ passwords or private keys (even if the server is compromised).
-• Mallory cannot use the client or server programs to achieve privilege escalation on the systems they are running on.
-• Mallory cannot leak or corrupt data in the client or server programs.
-• Mallory cannot crash the client or server programs.
-• The programs must never expose any information from the systems they run on, beyond what is required for the program to meet the requirements in the assignments.
+ * Mallory cannot find out users’ passwords or private keys (even if the server is compromised).
+ * Mallory cannot use the client or server programs to achieve privilege escalation on the systems they are running on.
+ * Mallory cannot leak or corrupt data in the client or server programs.
+ * Mallory cannot crash the client or server programs.
+ * The programs must never expose any information from the systems they run on, beyond what is required for the program to meet the requirements in the assignments.
 
-##### 6. Perform these actions any number of times, possibly simultaneously.
+#### 6. Perform these actions any number of times, possibly simultaneously.
 The threat actor can perform all the capabilities at the same time, possibly simultaneously.
-The design of our program will handle each of these malicious actions as described above.
+The design of our program includes handling each of these malicious actions as described above.
 All in all, our secure design mainly provides two out of the CIA TRIAD, Confidentiality and Integrity, as Availability is not required in this assignment.
 
 
