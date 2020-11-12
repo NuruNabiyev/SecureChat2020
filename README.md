@@ -20,6 +20,7 @@ The software in its current state is structured as shown in figure 1. The figure
 The server functions as a central point of communication between these components. It handles all incoming and outgoing messages and stores these in the SQLite3 database, so that they may be recalled whenever required. Once a client connects to the server by providing its address and port (see section 2 on the client program for usage), a worker process is forked off by the server to ensure the possibility of multiple clients. This worker process handles all communication with an individual client. For more information on the client to worker and worker to server communication, please see section 2 and 3 on the server and client programs. 
 
 ![Figure 1 - Software Architecture](docs/arch.png)
+*Figure 1 - Software Architecture*
 
 There are different types of communication present within this architecture, which can be described as follows:
 
@@ -44,6 +45,7 @@ As mentioned, the server is responsible for spawning worker processes that handl
 Whenever a regular message is received, the worker does not communicate this message directly with the server. Instead, it stores the message in the SQLite3 database with the `insert_global()` function (file `worker.c line 72`) and notifies the server using the `notify_workers()` function (file `worker.c line 53`) by writing over the bidirectional channel (file descriptor) that is set up between the server and worker process for notifications. The server in turn responds to this notification by setting the `pending` bit in a separate struct created for each worker process that is located in `server.c`. Each worker responds to this notification by executing the `handle_s2w_notification()` function (file `worker.c line 30`), in which they request the latest message in the database with an SQL query, of which the result is written back over the client's socket.
 
 ![Figure 2 - Communication Cycle](docs/servercycle.png)
+*Figure 2 - Communication Cycle*
 
 ### 2.2 Creation of the database
 In order for the workers to store messages in the database, the server must create this database if it does not exist yet. For now, this is done in the `main()` function of `server.c (line 372)`. The filename of the database is `chat.db` and consists of a table called `global_chat` with the following columns:
@@ -54,6 +56,7 @@ In order for the workers to store messages in the database, the server must crea
 In the future, this could be expanded using a separate column for timestamp, username (foreign key) and chat ID (foreign key). The desired database layout is shown in figure 3 and allows for added security by salting user passwords if a separate user table is made and separate chat logs such as private chat messages.
 
 ![Figure 3 - Database setup](docs/database.png)
+*Figure 3 - Database Setup*
  
 
 ## 3. Client Program
@@ -103,6 +106,7 @@ Section 1 on the architecture already displayed a few types of communication. Th
 First, the hybrid encryption scheme between client and worker is discussed. A hybrid encryption scheme is implemented by generating a symmetric key and symetrically encrypting the message. Then, the recipient's public key (obtained from the TTP) is used to encrypt the symmetric key, after which the encrypted message and the encrypted symmetric key are sent to the recipient. This overcomes the fact that RSA can only encrypt limited-size messages, creates some overhead in size after encryption and thus can be relatively expensive on small architectures. This type of encryption will be used for client to server or client to client communication.
 
 ![Figure 5 - Hybrid Encryption Scheme](docs/hybridenc.png)
+*Figure 5 - Hybrid Encryption Scheme*
 
 #### Difference between Public and Private messages
 Users should be able to send public and private messages. This is implemented by setting a bit in the metadata of a message that indicates whether it is public or private. If the server notices it to be public, it decrypts the message with its private key and notifies all workers. Otherwise, it is forwarded to the intended recipient.
