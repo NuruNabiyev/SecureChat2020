@@ -101,6 +101,9 @@ Section 1 on the architecture already displayed a few types of communication. Th
 ### Hybrid Encryption
 First, the hybrid encryption scheme between client and worker is discussed. A hybrid encryption scheme is implemented by generating a symmetric key and symetrically encrypting the message. Then, the recipient's public key (obtained from the TTP) is used to encrypt the symmetric key, after which the encrypted message and the encrypted symmetric key are sent to the recipient. This overcomes the fact that RSA can only encrypt limited-size messages, creates some overhead in size after encryption and thus can be relatively expensive on small architectures. This type of encryption will be used for client to server or client to client communication.
 
+#### Difference between Public and Private messages
+Users should be able to send public and private messages. This is implemented by setting a bit in the metadata of a message that indicates whether it is public or private. If the server notices it to be public, it decrypts the message with its private key and notifies all workers. Otherwise, it is forwarded to the intended recipient.
+
 ### Asymmetric Encryption
 Secondly, the asymmetric encryption scheme should be discussed. The reason that asymmetric encryption is chosen here, is because the key communication is mostly fixed and only has to make sure that the returned key by the TTP (or client/server) cannot be replaced or modified in transit. 
 
