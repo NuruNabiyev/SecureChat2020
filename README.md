@@ -95,6 +95,7 @@ In the commands table, a few commands are marked. These are commands that the cl
 In the below image, an overview is given of the earlier presented architecture in combination with the applied encryption. There are, wherever required, two types of encryption used; a hybrid encryption scheme and an asymmetric encryption scheme. The hybrid encryption scheme is used for the messaging protocol and utilizes RSA (asymmetric) and AES (symmetric) to mitigate the overhead of using RSA only. Communication regarding key management can be done with asymmetric encryption only.
 
 ![Figure 4 - Applied Cryptography](docs/crypto-arch.png)
+*Figure 4 - Applied Cryptography*
 
 Section 1 on the architecture already displayed a few types of communication. The above figure applies the required cryptography scheme to each communication type. The legend shows which type is being used between the components. 
 
