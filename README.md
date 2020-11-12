@@ -108,13 +108,13 @@ Secondly, the asymmetric encryption scheme should be discussed. The reason that 
 Thirdly, some communication channels have no encryption. This is regarding the database connection and server/worker connection. This communication is not done through the transmission of data, hence, there is no encryption required for data in transit. The workers are merely forked child processes of the server and the database is accessed directly through SQL queries.
  
 ### Database Security
-While data has to be secured in transit, it also has to be secured in rest. Or at least the sensitive parts of the data. This is why the sensitive information in the database, such as passwords, should be salted and hashed with the SHA-256 algorithm. We refrain from using slow hashes because we are of opinion that salting in combination with the SHA-256 algorithm is sufficient security and does not need the performance overhead of a slow hash.
+While data has to be secured in transit, it also has to be secured in rest. Or at least the sensitive parts of the data. This is why the sensitive information in the database, such as passwords, should be salted and hashed with the SHA-256 algorithm. We refrain from using slow hashes because we are of opinion that salting in combination with the SHA-256 algorithm is sufficient security and does not require the extra security coming with the performance overhead of a slow hash.
 
 ### Sender Verification
 It is important to ensure the confidentiality and integrity of a message, but sometimes, the sender has to be verified as well. This can be done using signature verification (not shown in the figure). Before sending the message, the sender hashes the message and encrypts it with their private key. Then, the message (including the digital signature) is sent to the recipient, who may verify the sender by hashing the obtained message and decrypting the signature with the recipients public key. If the resulting hashes match, the sender is verified. This is implemented for all client to client communication.
 
 ## Key Management
-
+In order to enable different parties to communicate with each other securely, some form of key management has to be achieved. This is done using a Trusted Third Party (TTP). This TTP is responsible for keeping all the public keys linked to users. Every connected party will be able to approach the TTP, ask for a certain public key, and use this public key to communicate with the user which has the corresponding private key. The implementation for the TTP will either be in Python3 or Bash. Clients can directly communicate with the TTP, as this creates less overhead and actually makes the attack surface smaller. Clients may not store the keys locally and have to query the TTP everytime they want to send a message, as it is undesirable to make the user responsible for their own security.
 
 
 
