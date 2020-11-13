@@ -27,13 +27,12 @@ void ui_state_init(struct ui_state *state) {
   /* TODO initialize ui_state */
 }
 
-int stack_of_commands(char* string)
-{
-  if(strcmp(string,"/login") == 0) return 1;
-  if(strcmp(string,"/register") == 0) return 2;
-  if(strcmp(string,"/users") == 0) return 3;
-  if(strcmp(string,"/exit") == 0) return 4;
-  if(string[0] != '/') return 5; 
+int stack_of_commands(char *string) {
+  if (strcmp(string, "/login") == 0) return 1;
+  if (strcmp(string, "/register") == 0) return 2;
+  if (strcmp(string, "/users") == 0) return 3;
+  if (strcmp(string, "/exit") == 0) return 4;
+  if (string[0] != '/') return 5;
   return 0;
 }
 
@@ -61,34 +60,38 @@ int checkCommand(char *string, int loginStatus) {
   parsedString = removeSpaces(copyString);
   int i = returnStringArraySize(parsedString);
 
-  if(parsedString[0] == NULL)
-  {
+  if (parsedString[0] == NULL) {
     printf("error: Empty messages are not allowed! \n");
-  }
-  else
-  {
+  } else {
+    int ret = 0;
     switch (stack_of_commands(parsedString[0])) {
       case 1:
-        return checkLoginCommand(parsedString, i, loginStatus);
+        ret = checkLoginCommand(parsedString, i, loginStatus);
+        break;
 
-      case 2: 
-        return checkRegisterCommand(parsedString, i, loginStatus);
+      case 2:
+        ret = checkRegisterCommand(parsedString, i, loginStatus);
+        break;
 
       case 3:
-        return checkUsersCommand(i, loginStatus);
+        ret = checkUsersCommand(i, loginStatus);
+        break;
 
       case 4:
-        return checkExitCommand(parsedString, i, loginStatus);
+        ret = checkExitCommand(parsedString, i, loginStatus);
+        break;
 
       case 5:
-        if (!loginStatus) printf("Error, you are not logged in.\n");
-        else return parseMessage(copyString);
+        if (!loginStatus) { printf("Error, you are not logged in.\n"); }
+        else {ret = parseMessage(copyString);}
         break;
 
       default:
         printf("Error: unknown command.\n");
         break;
     }
+    free(parsedString);
+    return ret;
   }
   return 0;
 }
@@ -131,7 +134,7 @@ int checkLoginCommand(char **string, int i, int loggedIn) {
 }
 
 int checkRegisterCommand(char **string, int i, int loggedIn) {
-  if(loggedIn) {
+  if (loggedIn) {
     printf("You are already logged in.\n");
     return 0;
   }
@@ -164,8 +167,8 @@ int parseMessage(char *string) {
 
   removeNewLine(string);
   if (string[0] != ' ' && string[0] != '\t'
-      && string[strlen(string)-1] != ' '
-      && string[strlen(string)-1] != '\t') {
+      && string[strlen(string) - 1] != ' '
+      && string[strlen(string) - 1] != '\t') {
     if (string[0] == '@') {
       printf("%s Hey how are you? \n", string);
     } else {

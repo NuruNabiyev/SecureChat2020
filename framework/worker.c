@@ -30,13 +30,13 @@ struct worker_state {
 static int handle_s2w_notification(struct worker_state *state) {
   // todo only broadcasting implemented for now
   db_rc = sqlite3_open("chat.db", &db);
-  char *db_sql = "SELECT message FROM global_chat ORDER by id DESC LIMIT 1;";
+  db_sql = "SELECT message FROM global_chat ORDER by id DESC LIMIT 1;";
   sqlite3_prepare_v2(db, db_sql, strlen(db_sql), &db_stmt, NULL);
 
   // will be looped once
   while ((db_rc = sqlite3_step(db_stmt)) == SQLITE_ROW) {
     const unsigned char *last_msg = sqlite3_column_text(db_stmt, 0);
-    int send_i = send(state->api.fd, last_msg, strlen(last_msg), 0);
+    int send_i = send(state->api.fd, last_msg, strlen(last_msg)+ 2, 0);
     printf("replied %i bytes\n", send_i);
   }
   sqlite3_finalize(db_stmt);
@@ -92,7 +92,7 @@ static int insert_global(struct worker_state *state,
   char *sql_format = "INSERT INTO global_chat (message) VALUES (\"%s\");";
   db_sql = (char *) malloc(strlen(sql_format) + strlen(newMain) + 5);
   sprintf(db_sql, sql_format, newMain);
-  sqlite3_prepare_v2(db, db_sql, strlen(db_sql), &db_stmt, NULL);
+  sqlite3_prepare_v2(db, db_sql, (int) strlen(db_sql), &db_stmt, NULL);
   db_rc = sqlite3_step(db_stmt);
   if (db_rc == SQLITE_DONE) {
     notify_workers(state);
@@ -114,13 +114,8 @@ static int send_all_messages(struct worker_state *state) {
 
   // todo gather to single payload and send?
   while ((db_rc = sqlite3_step(db_stmt)) == SQLITE_ROW) {
-    char payload[500];
-    const unsigned char *curr_msg = sqlite3_column_text(db_stmt, 0);
-
-    strcpy(payload, curr_msg);
-    strcat(payload, "\n");
-
-    send(state->api.fd, payload, strlen(payload), 0);
+    unsigned char *curr_msg = sqlite3_column_text(db_stmt, 0);
+    send(state->api.fd, curr_msg, strlen(curr_msg), 0);
   }
   sqlite3_finalize(db_stmt);
   return 0;
