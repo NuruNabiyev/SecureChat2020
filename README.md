@@ -128,71 +128,70 @@ In order to enable different parties to communicate with each other securely, so
 
 ## Security Properties
 
-The threat model that affects our project has the following capabilities:
+The security properties which our program has to satisfy are the following:
 
-Threat Model | 
+
+Security Properties | 
 --------|
-Determine at which addresses all clients and the server are running.| 
-Read, modify, inject, and/or block data sent over any network connection between a client and the server.| 
-Establish a connection with any client or the server, spoofing her network address to any possible value.|
-Implement a malicious client to attack either the server or other clients by sending specially crafted data. |
-Implement a malicious server and get clients to connect to it instead of the intended server, to attack clients by sending specially crafted data.|
-Perform these actions any number of times, possibly simultaneously.|
+Mallory cannot get information about direct messages for which she is not either the sender or the intended recipient.| 
+Mallory cannot send messages on behalf of another user.| 
+Mallory cannot modify messages sent by other users.|
+Mallory cannot find out users’ passwords or private keys (even if the server is compromised). |
+Mallory cannot use the client or server programs to achieve privilege escalation on the systems they are running on|
+Mallory cannot leak or corrupt data in the client or server programs.|
+Mallory cannot crash the client or server programs.|
+The programs must never expose any information from the systems they run on, beyond what is required for the program to meet the requirements in the assignments.|
+The programs must be unable to modify any files except for chat.db and the contents of the clientkeys and clientkeys directories, or any operating system settings, even if Mallory attempts to force it to do so.|
+
 
 ### Our Security Measures
 
-In this section we will describe how our security design will protect the client data and application against the capabilities of the threat actor, Mallory.
+In this section we will describe how our security design considers each security property and how it protects against the threat actor Mallory.
 
-#### 1. Determine at which addresses all clients and the server are running
-Mallory has the ability to find out the address of both the clients and server or already knows them. In our design of the application we will secure all the communication channels between client, server and Trusted Third Party using a hybrid encryption scheme. Hence, even if Mallory knows the addresses of the clients and server, she will not able to see read or modify the communication between them.  
+##### 1. Mallory cannot get information about direct messages for which she is not either the sender or the intended recipient.
 
-This coincides with the following security properties described in Section 7.2:
- * Mallory cannot get information about direct messages for which she is not either the sender or the intended recipient.
+The threat actor cannot easedrop on others direct message because our design implements asymmetric encryption on the communication between client and server/client. By doing so, Mallory will not be able to see the plaintext (the actual message) just the cyphertext which does not leak the original content.
 
-#### 2. Read, modify, inject, and/or block data sent over any network connection between a client and the server.
-The threat actor has the ability to intercept communication and modify, read, inject and/or block data over the network. As mentioned in the previous section, the data sent between the client and server will be encrypted. Therefore, Mallory will be able to read the cyphertext only and not the actual plaintext of the message, ensuring confidentiality of the messages. 
-When it comes to injecting and modifying the data, this will only result in the cyphertext being modified. By doing so, when the recipient receives the message and tries to decrypt it, it will fail. This ultimately results in a breach of availability. 
+Furthermore, by using encryption even if Mallory is able to determine at which address all clients and server are running or read, modify or inject data sent between the client and server the data will be encrypted disallowing her to actually read the plaintext. When it comes to injecting and modifying the data, this will only result in the cyphertext being modified. By doing so, when the recipient receives the message and tries to decrypt it, it will fail. This ultimately results in a breach of availability. 
 The only capability which Mallory can perform is blocking the message itself, which our program does not solve. However, in this assignment it is not required to provide availability. Thus, it will not be taken into account for this matter.
 
-This coincides with the following security properties described in Section 7.2:
- * Mallory cannot get information about direct messages for which she is not either the sender or the intended recipient.
- * Mallory cannot send messages on behalf of another user.
- * Mallory cannot modify messages sent by other user
+##### 2. Mallory cannot send messages on behalf of another user.
 
-#### 3. Establish a connection with any client or the server, spoofing her network address to any possible value.
-Mallory will be able to connect with a client or server, by spoofing her network address to any possible value.
-In our design, we will check the identity of each sender by using digital signatures. The logic behind signature verification was earlier explained in its own paragraph.
+In our design, we will check the identity of each sender by using digital signatures. The logic behind signature verification was earlier explained in its own paragraph in the sender verification subsection.
 
-This coincides with the following security properties described in Section 7.2:
- * Mallory cannot get information about direct messages for which she is not
-either the sender or the intended recipient.
- * Mallory cannot send messages on behalf of another user.
+When it comes to the threat model capability of spoofing her network address and connect to any client or the server, our design will not accept her message or connection as mentioned in subsection sender verification we use digital signature to verify the actual sender.
 
-#### 4. Implement a malicious client to attack either the server or other clients by sending specially crafted data.
-The threat actor is able to create a malicious client to attack either the server or client with specially crafted data.
-Our design of the application includes data escaping and sanitization on the server and client side, which will disallow any incorrect or abnormal input. Furthermore, our design includes handling which will inform the user of their mistake without exposing any unwanted information.
+##### 3. Mallory cannot modify messages sent by other users.
 
-This coincides with the following security properties described in Section 7.2:
- * Mallory cannot find out user's passwords or private keys (even if the server is compromised).
- * Mallory cannot use the client or server programs to achieve privilege escalation on the systems they are running on.
- * Mallory cannot leak or corrupt data in the client or server programs.
- * Mallory cannot crash the client or server programs.
- * The programs must never expose any information from the systems they run on, beyond what is required for the program to meet the requirements in the assignments.
-    
-#### 5. Implement a malicious server and get clients to connect to it instead of the intended server, to attack clients by sending specially crafted data.
-The threat actor is able to create a malicious server to get clients to connect to it and send specially crafted data to them.
-Our design of the application will perform data escaping and sanitization, on the server and client side, which will disallow any incorrect or abnormal input. Furthermore, our design includes error handling which will inform the user of their mistake without exposing any unwanted information.
+In our design of the application we will secure all the communication channels between client, server and Trusted Third Party using a hybrid encryption scheme. Hence, even if Mallory knows the addresses of the clients and server, she will not able to see read or modify the communication between them.  
 
-This coincides with the following security properties described in Section 7.2:
- * Mallory cannot find out users’ passwords or private keys (even if the server is compromised).
- * Mallory cannot use the client or server programs to achieve privilege escalation on the systems they are running on.
- * Mallory cannot leak or corrupt data in the client or server programs.
- * Mallory cannot crash the client or server programs.
- * The programs must never expose any information from the systems they run on, beyond what is required for the program to meet the requirements in the assignments.
+##### 4. Mallory cannot find out users’ passwords or private keys (even if the server is compromised).
 
-#### 6. Perform these actions any number of times, possibly simultaneously.
-The threat actor can perform all the capabilities at the same time, possibly simultaneously.
-The design of our program includes handling each of these malicious actions as described above.
+Within our program design we use a SQL database with holds the chat and user data. The information within the database will be hashed with the SHA256 function and the hash will be salted as well. Therefore, Mallory cannot find out the actual user data just the salted hashes which cannot be used anywhere.
+
+##### 5. Mallory cannot use the client or server programs to achieve privilege escalation on the systems they are running on.
+
+Our design of the application includes data escaping and sanitization on the server and client side, which will disallow any incorrect or abnormal input. Furthermore, our design includes error handling which will inform the user of their mistake without exposing any unwanted information. Therefore, disallowing any possible interaction with anything besides the program itself.
+
+##### 6. Mallory cannot leak or corrupt data in the client or server programs.
+
+As previously mentioned, our design of the application includes data escaping and sanitization on the server and client side, which will disallow any incorrect or abnormal input. Furthermore, our design includes error handling which will inform the user of their mistake without exposing any unwanted information. Hence, disallowing any data leakage or corrupt data.
+
+##### 7. Mallory cannot crash the client or server programs.
+
+In out design we make sure that we handle the user input correctly, even if they are multiple or single inputs, and parse it accordable. Furthermore, as mentioned above escape, sanitize user input and perform error handling for possible unexpected cases were the user could crash the program and disallowing that. 
+
+##### 8. The programs must never expose any information from the systems they run on, beyond what is required for the program to meet the requirements in the assignments.
+
+As mentioned before in the explanations for security properties 5,6 and 7 we will not allow the program to expose more information than required.
+
+##### 9. The programs must be unable to modify any files except for chat.db and the contents of the clientkeys and clientkeys directories, or any operating system settings, even if Mallory attempts to force it to do so.
+
+This property is strongly related to the explanations written above, to be more precise the explanation for security properties 5,6,7 and 8. By implementing the described secure measures we will not allow the user/program to access more than required in the assignment. 
+
+Furthermore, if Mallory is capable of implementing a malicious client or server the  security properties  5,6,7,8,9 explanations of our design divulges that we disallow any specially crafted data or input.
+
+When it comes to the last capability of the threat model, which is that she can perform all the mentioned capabilities at the same time, possibly simultaneously, as explained above our program will handle them correctly using the described secure design.
 All in all, our secure design mainly provides two out of the CIA TRIAD, Confidentiality and Integrity, as Availability is not required in this assignment.
 
 
