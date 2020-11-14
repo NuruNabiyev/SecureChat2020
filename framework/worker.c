@@ -73,12 +73,8 @@ static int insert_global(struct worker_state *state,
                          const struct api_msg *msg) {
   char *curr_time = get_current_time();
   char *user = "group 9:";  //todo extract from db
-  char *main_msg = (char *) malloc(strlen(msg->received) + strlen(curr_time) + strlen(user));
-  sprintf(main_msg, "%s %s %s", curr_time, user, msg->received);
-
-  // need to truncate newline
-  char *newMain = (char *) malloc(strlen(main_msg));
-  strcpy(newMain, main_msg);
+  char *main_msg = (char *) malloc(strlen(msg->received) + strlen(curr_time) + strlen(user) + 3);
+  sprintf(main_msg, "%s %s %s\n", curr_time, user, msg->received);
 
   db_rc = sqlite3_open("chat.db", &db);
   if (db_rc != SQLITE_OK) {
@@ -89,11 +85,12 @@ static int insert_global(struct worker_state *state,
   // SQL Query vulnerable to SQL Injection, will fix with parameterised query
   // using sqlite3_bind_text() in coming deadline.
   char *sql_format = "INSERT INTO global_chat (message) VALUES (\"%s\");";
-  db_sql = (char *) malloc(strlen(sql_format) + strlen(newMain) + 5);
-  sprintf(db_sql, sql_format, newMain);
+  db_sql = (char *) malloc(strlen(sql_format) + strlen(main_msg) + 5);
+  sprintf(db_sql, sql_format, main_msg);
   sqlite3_prepare_v2(db, db_sql, (int) strlen(db_sql), &db_stmt, NULL);
   db_rc = sqlite3_step(db_stmt);
   if (db_rc == SQLITE_DONE) {
+    free(main_msg);
     notify_workers(state);
   } else {
     printf("ERROR in adding message to table: %s\n", sqlite3_errmsg(db));

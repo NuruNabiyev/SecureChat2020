@@ -94,7 +94,7 @@ char **removeSpaces(char *string) {
   int i = 0;
   int n = strlen(string);
   char **token = malloc(sizeof(char *) * n);
-  const char delim[4] = "  \t\n";
+  const char delim[4] = "  \t";
   token[i] = strtok(string, delim);
 
   while (token[i] != NULL) {

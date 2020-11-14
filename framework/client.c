@@ -84,7 +84,7 @@ static int execute_request(
   } else {
     if(state->ui.loggedIn ==1)
     // process public message
-    printf("%s\n", msg->received);
+    printf("%s", msg->received);
   }
 
   return 0;
