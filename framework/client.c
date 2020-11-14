@@ -13,7 +13,6 @@ struct client_state {
     struct api_state api;
     int eof;
     struct ui_state ui;
-    int loggedIn;
 };
 
 /**
@@ -57,15 +56,10 @@ static int client_process_command(struct client_state *state) {
   //TODO: see if text can be dynamically alocated or can be put in a struct
 
   //here the text is a varibale. maybe place it in a struct? 
-  char text[500];
-
-  fgets(text, sizeof(text), stdin);
-
-  int c = checkCommand(text, state->loggedIn);
-  if (c == 1) {
-    if (!state->loggedIn) state->loggedIn = 1;
-    send(state->api.fd, text, strlen(text), 0);
-    //printf("sent %i bytes to %i: %s\n", send_i, state->api.fd, text);
+  if(ui_command_process(&state->ui) == 1)
+  {
+    state->ui.loggedIn = 1; // change this to check for AUTH
+    send(state->api.fd, state->ui.input, strlen(state->ui.input), 0);
   }
   return 0;
 }
@@ -81,14 +75,14 @@ static int execute_request(
 
   /* TODO check properly, this is just easy way to handle login/registration/messages */
   if (strstr(msg->received, "You have been registered!") != NULL) {
-    state->loggedIn = 1;
+    state->ui.loggedIn = 1;
     printf("registration succeeded\n");
   }
   else if (strstr(msg->received, "You have been logged in!") != NULL) {
-    state->loggedIn = 1;
+    state->ui.loggedIn = 1;
     printf("authentication succeeded\n");
   } else {
-    if(state->loggedIn ==1)
+    if(state->ui.loggedIn ==1)
     // process public message
     printf("%s\n", msg->received);
   }
@@ -174,8 +168,6 @@ static int client_state_init(struct client_state *state) {
 
   /* initialize UI */
   ui_state_init(&state->ui);
-
-  state->loggedIn = 0;
 
   /* TODO any additional client state initialization */
 

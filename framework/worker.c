@@ -36,7 +36,7 @@ static int handle_s2w_notification(struct worker_state *state) {
   // will be looped once
   while ((db_rc = sqlite3_step(db_stmt)) == SQLITE_ROW) {
     const unsigned char *last_msg = sqlite3_column_text(db_stmt, 0);
-    int send_i = send(state->api.fd, last_msg, strlen(last_msg)+ 2, 0);
+    int send_i = send(state->api.fd, last_msg, strlen(last_msg)+ 3, 0);
     printf("replied %i bytes\n", send_i);
   }
   sqlite3_finalize(db_stmt);
@@ -78,7 +78,6 @@ static int insert_global(struct worker_state *state,
 
   // need to truncate newline
   char *newMain = (char *) malloc(strlen(main_msg));
-  // strcpy(newMain, main_msg, strlen(main_msg));
   strcpy(newMain, main_msg);
 
   db_rc = sqlite3_open("chat.db", &db);
@@ -114,7 +113,7 @@ static int send_all_messages(struct worker_state *state) {
 
   // todo gather to single payload and send?
   while ((db_rc = sqlite3_step(db_stmt)) == SQLITE_ROW) {
-    unsigned char *curr_msg = sqlite3_column_text(db_stmt, 0);
+    unsigned const char *curr_msg = sqlite3_column_text(db_stmt, 0);
     send(state->api.fd, curr_msg, strlen(curr_msg), 0);
   }
   sqlite3_finalize(db_stmt);
