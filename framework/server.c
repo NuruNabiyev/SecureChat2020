@@ -352,6 +352,53 @@ static int handle_incoming(struct server_state *state) {
   return success ? 0 : -1;
 }
 
+/**
+ * Opens db and creates tables if do not exist
+ * @return 1 on success, 0 on fail
+ */
+static int create_tables() {
+  int db_exec;
+  sqlite3 *db;
+  sqlite3_stmt *db_stmt;
+
+  // create database
+  db_exec = sqlite3_open("chat.db", &db);
+  if (db_exec != SQLITE_OK) {
+    puts("Could not create database");
+    return 0;
+  }
+
+  // create chat table where registered users will be stored
+  sqlite3_prepare_v2(db, "CREATE TABLE IF NOT EXISTS \"global_chat\" ("
+                         "\"id\" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT UNIQUE,"
+                         //                         "\"timestamp\" TEXT NOT NULL,"
+                         //                         "\"from_user\" TEXT NOT NULL,"
+                         "\"message\" TEXT NOT NULL"
+                         ");",
+                     -1, &db_stmt, NULL);
+  db_exec = sqlite3_step(db_stmt);
+  if (db_exec != SQLITE_DONE) {
+    printf("ERROR creating global chat: %s\n", sqlite3_errmsg(db));
+    return 0;
+  }
+
+  // create users table where registered users will be stored
+  sqlite3_prepare_v2(db, "CREATE TABLE IF NOT EXISTS \"users\" ("
+                         "\"username\" TEXT NOT NULL PRIMARY KEY UNIQUE,"
+                         "\"hash_pwd\" TEXT NOT NULL"
+                         ");",
+                     -1, &db_stmt, NULL);
+  db_exec = sqlite3_step(db_stmt);
+  db_rc = sqlite3_step(db_stmt);
+
+  if (db_exec != SQLITE_DONE) {
+    printf("ERROR creating users: %s\n", sqlite3_errmsg(db));
+    return 0;
+  }
+
+  return 1;
+}
+
 int main(int argc, char **argv) {
   uint16_t port;
   struct server_state state;
@@ -369,30 +416,9 @@ int main(int argc, char **argv) {
   state.sockfd = create_server_socket(port);
   if (state.sockfd < 0) return 1;
 
-  int db_exec;
-  sqlite3 *db;
-  sqlite3_stmt *db_stmt;
-
-  // create database
-  db_exec = sqlite3_open("chat.db", &db);
-  if (db_exec != SQLITE_OK) {
-    puts("Could not create database");
+  int db_ok = create_tables();
+  if (db_ok == 0) {
     return 1;
-  }
-
-
-  // create users table where registered users will be stored
-  sqlite3_prepare_v2(db, "CREATE TABLE IF NOT EXISTS \"global_chat\" ("
-                         "\"id\" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT UNIQUE,"
-//                         "\"timestamp\" TEXT NOT NULL,"
-//                         "\"from_user\" TEXT NOT NULL,"
-                         "\"message\" TEXT NOT NULL"
-                         ");",
-                     -1, &db_stmt, NULL);
-  db_exec = sqlite3_step(db_stmt);
-  if (db_exec != SQLITE_DONE) {
-    printf("ERROR in database: %s\n", sqlite3_errmsg(db));
-    return 0;
   }
 
   /* wait for connections */

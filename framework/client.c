@@ -59,6 +59,7 @@ static int client_process_command(struct client_state *state) {
   if(ui_command_process(&state->ui) == 1)
   {
     state->ui.loggedIn = 1; // change this to check for AUTH
+    printf("sending %s.\n", state->ui.input);
     send(state->api.fd, state->ui.input, strlen(state->ui.input), 0);
   }
   return 0;
