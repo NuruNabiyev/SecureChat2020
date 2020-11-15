@@ -84,9 +84,9 @@ int stack_of_commands(char* string)
 {
   if(strcmp(string,"/login") == 0) return 1;
   if(strcmp(string,"/register") == 0) return 2;
-  if(strcmp(string,"/users") == 0) return 3;
-  if(strcmp(string,"/exit") == 0) return 4;
-  if(string[0] != '/') return 5; 
+  if(strcmp(string,"/users\n") == 0) return 3;
+  if(strcmp(string,"/exit\n") == 0) return 4;
+  if(string[0] != '/') return 5;
   return 0;
 }
 
