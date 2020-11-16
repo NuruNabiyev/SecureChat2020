@@ -22,14 +22,22 @@ int api_recv(struct api_state *state, struct api_msg *msg) {
   int recv_bytes = recv(state->fd, client_msg, 500, 0);
   // substring until received bytes
   char substr[recv_bytes];
-  for (int i = 0; i < recv_bytes; ++i)
+  for (int i = 0; i < recv_bytes; ++i) {
     substr[i] = client_msg[i];
+  }
   substr[recv_bytes] = '\0';
 
-  //printf("api_recv: %i bytes from %i: %s\n", recv_bytes, state->fd, substr);
+  msg->received = (char *) malloc(sizeof(char *) * strlen(substr));
+//  strcpy(msg->received, substr);
+//  memset(msg->received, 0, strlen(substr));
+  strncpy(msg->received, substr, strlen(substr) + 1);
 
-  msg->received = (char *) malloc(sizeof(char *) * recv_bytes);
-  strcpy(msg->received, substr);
+//  msg->received = (char *) malloc(sizeof(char *) * strlen(substr));
+////  strcpy(msg->received, substr);
+////  memset(msg->received, 0, strlen(substr));
+//  strncpy(msg->received, substr, strlen(substr) + 1);
+
+  printf("api_recv: substr: %s. msg:%s.\n", substr, msg->received);
 
   if (recv_bytes > 0) return 1;
   else if (recv_bytes < 0) return -1;
@@ -43,7 +51,8 @@ int api_recv(struct api_state *state, struct api_msg *msg) {
 void api_recv_free(struct api_msg *msg) {
 
   assert(msg);
-  //free(msg->received);
+//  memset(msg->received, 0, strlen(msg->received));
+//  free(msg->received);
   /* TODO clean up state allocated for msg */
 }
 

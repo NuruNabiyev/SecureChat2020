@@ -4,6 +4,8 @@
 #include <netinet/in.h>
 #include <time.h>
 
+#define DB_NAME "chat.db"
+
 int lookup_host_ipv4(const char *hostname, struct in_addr *addr);
 
 int max(int x, int y);

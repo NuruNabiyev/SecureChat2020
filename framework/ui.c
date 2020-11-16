@@ -38,6 +38,9 @@ void readLine(char* input)
   setvbuf(stdin, NULL, _IONBF, 0 );
   setvbuf(stdout, NULL, _IONBF, 0);
   fgets(input,MAX_INPUT,stdin);
+  size_t ln = strlen(input)-1;
+  if (input[ln] == '\n')
+    input[ln] = '\0';
 }
 
 int check_command(struct ui_state *state)
