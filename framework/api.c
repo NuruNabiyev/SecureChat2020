@@ -27,16 +27,7 @@ int api_recv(struct api_state *state, struct api_msg *msg) {
   substr[recv_bytes] = '\0';
 
   msg->received = (char *) malloc(sizeof(char *) * strlen(substr));
-//  strcpy(msg->received, substr);
-//  memset(msg->received, 0, strlen(substr));
   strncpy(msg->received, substr, strlen(substr) + 1);
-
-//  msg->received = (char *) malloc(sizeof(char *) * strlen(substr));
-////  strcpy(msg->received, substr);
-////  memset(msg->received, 0, strlen(substr));
-//  strncpy(msg->received, substr, strlen(substr) + 1);
-
-  printf("api_recv: substr: %s. msg:%s.\n", substr, msg->received);
 
   if (recv_bytes > 0) return 1;
   else if (recv_bytes < 0) return -1;
