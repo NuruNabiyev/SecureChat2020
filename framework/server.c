@@ -362,7 +362,7 @@ static int create_tables() {
   sqlite3_stmt *db_stmt;
 
   // create database
-  db_exec = sqlite3_open("chat.db", &db);
+  db_exec = sqlite3_open(DB_NAME, &db);
   if (db_exec != SQLITE_OK) {
     puts("Could not create database");
     return 0;
@@ -385,16 +385,23 @@ static int create_tables() {
   // create users table where registered users will be stored
   sqlite3_prepare_v2(db, "CREATE TABLE IF NOT EXISTS \"users\" ("
                          "\"username\" TEXT NOT NULL PRIMARY KEY UNIQUE,"
-                         "\"hash_pwd\" TEXT NOT NULL"
+                         "\"hash_pwd\" TEXT NOT NULL,"
+                         // 1 if true, 0 if offline
+                         "\"is_logged_in\" INTEGER NOT NULL"
                          ");",
                      -1, &db_stmt, NULL);
   db_exec = sqlite3_step(db_stmt);
-  db_rc = sqlite3_step(db_stmt);
 
   if (db_exec != SQLITE_DONE) {
     printf("ERROR creating users: %s\n", sqlite3_errmsg(db));
     return 0;
   }
+
+  // set all logged in to false
+  db_sql = "UPDATE users set is_logged_in = 0 where username IS NOT NULL;";
+  sqlite3_prepare_v2(db, db_sql, -1, &db_stmt, NULL);
+  db_rc = sqlite3_step(db_stmt);
+  sqlite3_finalize(db_stmt);
 
   return 1;
 }

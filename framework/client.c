@@ -48,7 +48,6 @@ static int client_connect(struct client_state *state,
   return fd;
 }
 
-
 static int client_process_command(struct client_state *state) {
 
   assert(state);
@@ -56,10 +55,8 @@ static int client_process_command(struct client_state *state) {
   //TODO: see if text can be dynamically alocated or can be put in a struct
 
   //here the text is a varibale. maybe place it in a struct? 
-  if(ui_command_process(&state->ui) == 1)
-  {
-    state->ui.loggedIn = 1; // change this to check for AUTH
-    printf("sending %s.\n", state->ui.input);
+  if (ui_command_process(&state->ui) == 1) {
+    // state->ui.loggedIn = 1; // change this to check for AUTH
     send(state->api.fd, state->ui.input, strlen(state->ui.input), 0);
   }
   return 0;
@@ -70,24 +67,18 @@ static int client_process_command(struct client_state *state) {
  * @param state   Initialized client state
  * @param msg     Message to handle
  */
-static int execute_request(
-        struct client_state *state,
-        const struct api_msg *msg) {
-
-  /* TODO check properly, this is just easy way to handle login/registration/messages */
+static int execute_request(struct client_state *state, const struct api_msg *msg) {
+  // FIXME needle
   if (strstr(msg->received, "You have been registered!") != NULL) {
     state->ui.loggedIn = 1;
     printf("registration succeeded\n");
-  }
-  else if (strstr(msg->received, "You have been logged in!") != NULL) {
+  } else if (strstr(msg->received, "You have been logged in!") != NULL) {
     state->ui.loggedIn = 1;
     printf("authentication succeeded\n");
   } else {
-    if(state->ui.loggedIn ==1)
-    // process public message
+    // process any message
     printf("%s", msg->received);
   }
-
   return 0;
 }
 
