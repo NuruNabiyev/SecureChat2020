@@ -55,7 +55,7 @@ int check_command(struct ui_state *state)
   int arraySize = returnStringArraySize(parsedString);
 
  
-  if (parsedString[0] == NULL) {
+  if (parsedString[0] == NULL || strcmp(state->input,"\n") == 0) {
     printf("error:Empty text is not permitted.\n");
     return 0;
   }

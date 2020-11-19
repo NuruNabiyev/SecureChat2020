@@ -37,7 +37,8 @@ static int handle_s2w_notification(struct worker_state *state) {
   // will be looped once
   while ((db_rc = sqlite3_step(db_stmt)) == SQLITE_ROW) {
     const unsigned char *last_msg = sqlite3_column_text(db_stmt, 0);
-    send(state->api.fd, last_msg, strlen(last_msg) + 3, 0);
+    int send_i = send(state->api.fd, last_msg, strlen(last_msg), 0);
+    printf("replied %i bytes\n", send_i);
   }
   sqlite3_finalize(db_stmt);
   return 0;
@@ -73,7 +74,7 @@ static int insert_global(struct worker_state *state,
                          const struct api_msg *msg) {
   char *curr_time = get_current_time();
   char *user = "group 9:";  //todo extract from db
-  char *main_msg = (char *) malloc(strlen(msg->received) + strlen(curr_time) + strlen(user) + 3);
+  char *main_msg = (char *) malloc(strlen(msg->received) + strlen(curr_time) + strlen(user));
   sprintf(main_msg, "%s %s %s\n", curr_time, user, msg->received);
 
   db_rc = sqlite3_open(DB_NAME, &db);
@@ -85,7 +86,7 @@ static int insert_global(struct worker_state *state,
   // SQL Query vulnerable to SQL Injection, will fix with parameterised query
   // using sqlite3_bind_text() in coming deadline.
   char *sql_format = "INSERT INTO global_chat (message) VALUES (\"%s\");";
-  db_sql = (char *) malloc(strlen(sql_format) + strlen(main_msg) + 5);
+  db_sql = (char *) malloc(strlen(sql_format) + strlen(main_msg));
   sprintf(db_sql, sql_format, main_msg);
   sqlite3_prepare_v2(db, db_sql, (int) strlen(db_sql), &db_stmt, NULL);
   db_rc = sqlite3_step(db_stmt);
