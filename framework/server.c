@@ -10,10 +10,10 @@
 #include <sys/time.h>
 #include <sys/wait.h>
 #include <unistd.h>
-#include <sqlite3.h>
 
 #include "util.h"
 #include "worker.h"
+#include "chatdb.h"
 
 #define MAX_CHILDREN 16
 
@@ -352,60 +352,6 @@ static int handle_incoming(struct server_state *state) {
   return success ? 0 : -1;
 }
 
-/**
- * Opens db and creates tables if do not exist
- * @return 1 on success, 0 on fail
- */
-static int create_tables() {
-  int db_exec;
-  sqlite3 *db;
-  sqlite3_stmt *db_stmt;
-
-  // create database
-  db_exec = sqlite3_open(DB_NAME, &db);
-  if (db_exec != SQLITE_OK) {
-    puts("Could not create database");
-    return 0;
-  }
-
-  // create chat table where registered users will be stored
-  sqlite3_prepare_v2(db, "CREATE TABLE IF NOT EXISTS \"global_chat\" ("
-                         "\"id\" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT UNIQUE,"
-                         //                         "\"timestamp\" TEXT NOT NULL,"
-                         //                         "\"from_user\" TEXT NOT NULL,"
-                         "\"message\" TEXT NOT NULL"
-                         ");",
-                     -1, &db_stmt, NULL);
-  db_exec = sqlite3_step(db_stmt);
-  if (db_exec != SQLITE_DONE) {
-    printf("ERROR creating global chat: %s\n", sqlite3_errmsg(db));
-    return 0;
-  }
-
-  // create users table where registered users will be stored
-  sqlite3_prepare_v2(db, "CREATE TABLE IF NOT EXISTS \"users\" ("
-                         "\"username\" TEXT NOT NULL PRIMARY KEY UNIQUE,"
-                         "\"hash_pwd\" TEXT NOT NULL,"
-                         // 1 if true, 0 if offline
-                         "\"is_logged_in\" INTEGER NOT NULL"
-                         ");",
-                     -1, &db_stmt, NULL);
-  db_exec = sqlite3_step(db_stmt);
-
-  if (db_exec != SQLITE_DONE) {
-    printf("ERROR creating users: %s\n", sqlite3_errmsg(db));
-    return 0;
-  }
-
-  // set all logged in to false
-  db_sql = "UPDATE users set is_logged_in = 0 where username IS NOT NULL;";
-  sqlite3_prepare_v2(db, db_sql, -1, &db_stmt, NULL);
-  db_rc = sqlite3_step(db_stmt);
-  sqlite3_finalize(db_stmt);
-
-  return 1;
-}
-
 int main(int argc, char **argv) {
   uint16_t port;
   struct server_state state;
@@ -423,8 +369,7 @@ int main(int argc, char **argv) {
   state.sockfd = create_server_socket(port);
   if (state.sockfd < 0) return 1;
 
-  int db_ok = create_tables();
-  if (db_ok == 0) {
+  if (create_tables() == 0) {
     return 1;
   }
 

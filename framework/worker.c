@@ -5,15 +5,13 @@
 #include <string.h>
 #include <unistd.h>
 
-#include <sqlite3.h>
-#include <sys/types.h>
 #include <sys/socket.h>
-#include <netinet/in.h>
 #include <sys/select.h>
 
 #include "api.h"
 #include "util.h"
 #include "worker.h"
+#include "chatdb.h"
 
 struct worker_state {
     struct api_state api;
@@ -30,17 +28,7 @@ struct worker_state {
  */
 static int handle_s2w_notification(struct worker_state *state) {
   // todo only broadcasting implemented for now
-  db_rc = sqlite3_open(DB_NAME, &db);
-  db_sql = "SELECT message FROM global_chat ORDER by id DESC LIMIT 1;";
-  sqlite3_prepare_v2(db, db_sql, strlen(db_sql), &db_stmt, NULL);
-
-  // will be looped once
-  while ((db_rc = sqlite3_step(db_stmt)) == SQLITE_ROW) {
-    const unsigned char *last_msg = sqlite3_column_text(db_stmt, 0);
-    int send_i = send(state->api.fd, last_msg, strlen(last_msg), 0);
-    printf("replied %i bytes\n", send_i);
-  }
-  sqlite3_finalize(db_stmt);
+  broadcast_last(state->api.fd);
   return 0;
 }
 
@@ -63,59 +51,6 @@ static int notify_workers(struct worker_state *state) {
     perror("error: write of server_fd failed");
     return -1;
   }
-  return 0;
-}
-
-/**
- * Inserts global message to db
- * @return 1 if failed, 0 if all ok
- */
-static int insert_global(struct worker_state *state,
-                         const struct api_msg *msg) {
-  char *curr_time = get_current_time();
-  char *user = "group 9:";  //todo extract from db
-  char *main_msg = (char *) malloc(strlen(msg->received) + strlen(curr_time) + strlen(user));
-  sprintf(main_msg, "%s %s %s\n", curr_time, user, msg->received);
-
-  db_rc = sqlite3_open(DB_NAME, &db);
-  if (db_rc != SQLITE_OK) {
-    puts("Could not open database");
-    return 1;
-  }
-
-  // SQL Query vulnerable to SQL Injection, will fix with parameterised query
-  // using sqlite3_bind_text() in coming deadline.
-  char *sql_format = "INSERT INTO global_chat (message) VALUES (\"%s\");";
-  db_sql = (char *) malloc(strlen(sql_format) + strlen(main_msg));
-  sprintf(db_sql, sql_format, main_msg);
-  sqlite3_prepare_v2(db, db_sql, (int) strlen(db_sql), &db_stmt, NULL);
-  db_rc = sqlite3_step(db_stmt);
-  sqlite3_finalize(db_stmt);
-  if (db_rc == SQLITE_DONE) {
-    free(main_msg);
-    notify_workers(state);
-  } else {
-    printf("ERROR in adding message to table: %s\n", sqlite3_errmsg(db));
-  }
-
-  return 0;
-}
-
-/**
- * Query all messages and send to that client
- * @return 0 on success
- */
-static int send_all_messages(struct worker_state *state) {
-  db_rc = sqlite3_open(DB_NAME, &db);
-  char *db_sql = "SELECT message FROM global_chat;";
-  sqlite3_prepare_v2(db, db_sql, strlen(db_sql), &db_stmt, NULL);
-
-  // todo gather to single payload and send?
-  while ((db_rc = sqlite3_step(db_stmt)) == SQLITE_ROW) {
-    unsigned const char *curr_msg = sqlite3_column_text(db_stmt, 0);
-    send(state->api.fd, curr_msg, strlen(curr_msg), 0);
-  }
-  sqlite3_finalize(db_stmt);
   return 0;
 }
 
@@ -171,130 +106,26 @@ static char *extract_password(char *payload) {
   return pwdPtr;
 }
 
-static int set_logged_in(struct worker_state *state) {
-  db_rc = sqlite3_open(DB_NAME, &db);
-  db_sql = "UPDATE users set is_logged_in = ?1 where username = ?2;";
-  sqlite3_prepare_v2(db, db_sql, -1, &db_stmt, NULL);
-  sqlite3_bind_int(db_stmt, 1, 1);
-  sqlite3_bind_text(db_stmt, 2, state->current_user, -1, SQLITE_STATIC);
-  db_rc = sqlite3_step(db_stmt);
-
-  if (db_rc != SQLITE_DONE) {
-    printf("ERROR updating data: %s\n", sqlite3_errmsg(db));
-    return -1;
-  }
-  sqlite3_finalize(db_stmt);
-  return 1;
-}
-
 /**
- * Adds user into DB
- * @return 1 on success, 0 if error
+ * Singe most of the code for login and register is same, except for db
+ * @param is_register_or_login  1 for register, 0, for login
+ * @param state of the worker
+ * @param received full message from user
  */
-static void create_user(struct worker_state *state, char *reg_payload) {
-  char *username = extract_username(reg_payload);
-  char *password = extract_password(reg_payload); // todo hash and salt this
-  db_rc = sqlite3_open(DB_NAME, &db);
-
-  db_sql = "SELECT COUNT(*) FROM users WHERE username = ?1";
-  sqlite3_prepare_v2(db, db_sql, -1, &db_stmt, NULL);
-  sqlite3_bind_text(db_stmt, 1, username, -1, SQLITE_STATIC);
-
-  int user_exists = 0;
-  while ((db_rc = sqlite3_step(db_stmt)) == SQLITE_ROW) {
-    user_exists = sqlite3_column_int(db_stmt, 0);
+static void execute_credentials(int is_register_or_login, struct worker_state *state, char *received) {
+  char *username = extract_username(received);
+  char *password = extract_password(received); // todo hash and salt this
+  int ret = -1;
+  if (is_register_or_login == 1) {
+    ret = create_user(username, password, state->api.fd);
+  } else if (is_register_or_login == 0) {
+    ret = check_login(username, password, state->api.fd);
   }
-  sqlite3_finalize(db_stmt);
-
-  if (user_exists == 0) {
-    // add user to table
-    db_sql = "INSERT INTO users (username, hash_pwd, is_logged_in) "
-             "VALUES (?1, ?2, ?3);";
-    sqlite3_prepare_v2(db, db_sql, -1, &db_stmt, NULL);
-    sqlite3_bind_text(db_stmt, 1, username, -1, SQLITE_STATIC);
-    sqlite3_bind_text(db_stmt, 2, password, -1, SQLITE_STATIC);
-    sqlite3_bind_int(db_stmt, 3, 1);  // make user online
-    db_rc = sqlite3_step(db_stmt);
-    sqlite3_finalize(db_stmt);
-    if (db_rc == SQLITE_DONE) {
-      state->current_user = username;
-      // send to client
-      char *register_ok = "You have been registered!";
-      send(state->api.fd, register_ok, strlen(register_ok), 0);
-      send_all_messages(state);
-    } else {
-      printf("ERROR inserting data: %s\n", sqlite3_errmsg(db));
-      char *registration_fail = "error: please try again\n";
-      send(state->api.fd, registration_fail, strlen(registration_fail), 0);
-    }
-
-  } else {
-    // send to client
-    char *registration_fail = "error: user already exists\n";
-    send(state->api.fd, registration_fail, strlen(registration_fail), 0);
-  }
-}
-
-static void check_login(struct worker_state *state, char *reg_payload) {
-  char *username = extract_username(reg_payload);
-  char *password = extract_password(reg_payload);
-
-  db_rc = sqlite3_open(DB_NAME, &db);
-  db_sql = "SELECT * FROM users WHERE username = ?1";
-  sqlite3_prepare_v2(db, db_sql, -1, &db_stmt, NULL);
-  sqlite3_bind_text(db_stmt, 1, username, -1, SQLITE_STATIC);
-
-  int password_matches = 0;
-  while ((db_rc = sqlite3_step(db_stmt)) == SQLITE_ROW) {
-    const char * sql_pwd = sqlite3_column_text(db_stmt, 1);
-    if (strcmp(password, sql_pwd) == 0) {
-      password_matches = 1;
-    }
-  }
-  sqlite3_finalize(db_stmt);
-
-  if (password_matches == 1) {
-    // save user in global variable
+  if (ret == 1) {
     state->current_user = username;
-    int ret = set_logged_in(state);
-
-    if (ret == -1) {
-      printf("ERROR updating login info: %s\n", sqlite3_errmsg(db));
-    } else {
-      char *text = "You have been logged in!";
-      send(state->api.fd, text, strlen(text), 0);
-      // send all past messages to user
-      send_all_messages(state);
-    }
-  } else {
-    // send error to client
-    char *login_fail = "error: invalid credentials\n";
-    send(state->api.fd, login_fail, strlen(login_fail), 0);
+    set_logged_in(state->current_user);
+    send_all_messages(state->api.fd);
   }
-}
-
-static void send_all_users(struct worker_state *state) {
-  db_rc = sqlite3_open(DB_NAME, &db);
-  db_sql = "SELECT * FROM users WHERE is_logged_in IS 1";
-  sqlite3_prepare_v2(db, db_sql, -1, &db_stmt, NULL);
-
-  char logged_in_users[5000] = "";
-  strcpy(logged_in_users, "Logged in users: ");
-
-  while ((db_rc = sqlite3_step(db_stmt)) == SQLITE_ROW) {
-    const unsigned char *curr_user = sqlite3_column_text(db_stmt, 0);
-    strcat(logged_in_users, curr_user);
-    strcat(logged_in_users, ", ");
-  }
-  // remove last coma
-  size_t ln = strlen(logged_in_users)-2;
-  if (logged_in_users[ln] == ',') {
-    logged_in_users[ln] = '\n';
-    logged_in_users[ln + 1] = '\0';
-  }
-  sqlite3_finalize(db_stmt);
-
-  send(state->api.fd, logged_in_users, strlen(logged_in_users), 0);
 }
 
 /**
@@ -305,15 +136,18 @@ static void send_all_users(struct worker_state *state) {
 static int execute_request(struct worker_state *state, const struct api_msg *msg) {
   // FIXME needle
   if (strstr(msg->received, "/register") != NULL) {
-    create_user(state, msg->received);
-    set_logged_in(state);
+    execute_credentials(1, state, msg->received);
   } else if (strstr(msg->received, "/login") != NULL) {
-    check_login(state, msg->received);
+    execute_credentials(0, state, msg->received);
   } else if (strcmp(msg->received, "/users") == 0) {
-    send_all_users(state);
+    char *users = retrieve_all_users();
+    send(state->api.fd, users, strlen(users), 0);
   } else {
     // add to db and ask every worker to broadcast
-    return insert_global(state, msg);
+    int inserted = insert_global(msg->received);
+    if (inserted == 1) {
+      notify_workers(state);
+    }
   }
 
   return 0;
@@ -444,18 +278,7 @@ static int worker_state_init(struct worker_state *state, int connfd, int server_
  *
  */
 static void worker_state_free(struct worker_state *state) {
-  // make is_logged_in false for this user
-  db_rc = sqlite3_open(DB_NAME, &db);
-  db_sql = "UPDATE users set is_logged_in = ?1 where username = ?2;";
-  sqlite3_prepare_v2(db, db_sql, -1, &db_stmt, NULL);
-  sqlite3_bind_int(db_stmt, 1, 0);
-  sqlite3_bind_text(db_stmt, 2, state->current_user, -1, SQLITE_STATIC);
-  db_rc = sqlite3_step(db_stmt);
-
-  if (db_rc != SQLITE_DONE) {
-    printf("ERROR updating data: %s\n", sqlite3_errmsg(db));
-  }
-  sqlite3_finalize(db_stmt);
+  logout_user(state->current_user);
 
   /* clean up API state */
   api_state_free(&state->api);
