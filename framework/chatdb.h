@@ -29,9 +29,9 @@ int create_tables();
 int create_user(char *username, char* password, int fd);
 int check_login(char *username, char* password, int fd);
 
-void broadcast_last(int fd);
+void broadcast_last_global(int fd);
 
-int insert_global(char *received);
+int insert_global(char *received, char* username);
 
 int send_all_messages(int fd);
 

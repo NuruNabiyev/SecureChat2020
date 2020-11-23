@@ -16,8 +16,9 @@ int create_tables() {
   // create chat table where registered users will be stored
   sqlite3_prepare_v2(db, "CREATE TABLE IF NOT EXISTS \"global_chat\" ("
                          "\"id\" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT UNIQUE,"
-                         //                         "\"timestamp\" TEXT NOT NULL,"
-                         //                         "\"from_user\" TEXT NOT NULL,"
+                         "\"sender\" TEXT NOT NULL,"
+                         // username or NULL for global
+                         "\"recipient\" TEXT,"
                          "\"message\" TEXT NOT NULL"
                          ");",
                      -1, &db_stmt, NULL);
@@ -129,9 +130,11 @@ int check_login(char *username, char* password, int fd) {
  * TODO should retrieve and delegate sending to worker (e.g. return string)
  * @param fd client fd
  */
-void broadcast_last(int fd) {
+void broadcast_last_global(int fd) {
   db_rc = sqlite3_open(DB_NAME, &db);
-  db_sql = "SELECT message FROM global_chat ORDER by id DESC LIMIT 1;";
+  db_sql = "SELECT message FROM global_chat "
+           "where recipient IS NULL "
+           "ORDER by id DESC LIMIT 1;";
   sqlite3_prepare_v2(db, db_sql, strlen(db_sql), &db_stmt, NULL);
 
   // will be looped once
@@ -148,11 +151,10 @@ void broadcast_last(int fd) {
  * Inserts global message to db
  * @return -1 if failed, 1 if all ok and proceed to notify workers
  */
-int insert_global(char *received) {
+int insert_global(char *received, char* username) {
   char *curr_time = get_current_time();
-  char *user = "group 9:";  //todo extract from db
-  char *main_msg = (char *) malloc(strlen(received) + strlen(curr_time) + strlen(user));
-  sprintf(main_msg, "%s %s %s\n", curr_time, user, received);
+  char *main_msg = (char *) malloc(strlen(received) + strlen(curr_time) + strlen(username));
+  sprintf(main_msg, "%s %s: %s\n", curr_time, username, received);
 
   db_rc = sqlite3_open(DB_NAME, &db);
   if (db_rc != SQLITE_OK) {
@@ -160,14 +162,15 @@ int insert_global(char *received) {
     return -1;
   }
 
-  // SQL Query vulnerable to SQL Injection, will fix with parameterised query
-  // using sqlite3_bind_text() in coming deadline.
-  char *sql_format = "INSERT INTO global_chat (message) VALUES (\"%s\");";
-  db_sql = (char *) malloc(strlen(sql_format) + strlen(main_msg));
-  sprintf(db_sql, sql_format, main_msg);
-  sqlite3_prepare_v2(db, db_sql, (int) strlen(db_sql), &db_stmt, NULL);
+  db_sql = "INSERT INTO global_chat (sender, recipient, message) "
+           "VALUES (?1, ?2, ?3);";
+  sqlite3_prepare_v2(db, db_sql, -1, &db_stmt, NULL);
+  sqlite3_bind_text(db_stmt, 1, username, -1, SQLITE_STATIC);
+  sqlite3_bind_text(db_stmt, 2, NULL, -1, SQLITE_STATIC);
+  sqlite3_bind_text(db_stmt, 3, main_msg, -1, SQLITE_STATIC);
   db_rc = sqlite3_step(db_stmt);
   sqlite3_finalize(db_stmt);
+
   if (db_rc == SQLITE_DONE) {
     free(main_msg);
     return 1;
@@ -184,7 +187,8 @@ int insert_global(char *received) {
  */
 int send_all_messages(int fd) {
   db_rc = sqlite3_open(DB_NAME, &db);
-  char *db_sql = "SELECT message FROM global_chat;";
+  // todo also add his personal messages
+  char *db_sql = "SELECT message FROM global_chat where recipient IS NULL;";
   sqlite3_prepare_v2(db, db_sql, strlen(db_sql), &db_stmt, NULL);
 
   // todo gather to single payload and send?

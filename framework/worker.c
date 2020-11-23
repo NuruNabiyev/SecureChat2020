@@ -28,7 +28,7 @@ struct worker_state {
  */
 static int handle_s2w_notification(struct worker_state *state) {
   // todo only broadcasting implemented for now
-  broadcast_last(state->api.fd);
+  broadcast_last_global(state->api.fd);
   return 0;
 }
 
@@ -144,7 +144,7 @@ static int execute_request(struct worker_state *state, const struct api_msg *msg
     send(state->api.fd, users, strlen(users), 0);
   } else {
     // add to db and ask every worker to broadcast
-    int inserted = insert_global(msg->received);
+    int inserted = insert_global(msg->received, state->current_user);
     if (inserted == 1) {
       notify_workers(state);
     }
