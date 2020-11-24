@@ -2,7 +2,9 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+
 #define MAX_INPUT 300
+
 #include "ui.h"
 
 /**
@@ -27,35 +29,32 @@ void ui_state_init(struct ui_state *state) {
   /* TODO initialize ui_state */
 }
 
-int ui_command_process(struct ui_state *state)
-{
+int ui_command_process(struct ui_state *state) {
   readLine(state->input);
   return check_command(state);
 }
 
-void readLine(char* input)
-{
-  setvbuf(stdin, NULL, _IONBF, 0 );
+void readLine(char *input) {
+  setvbuf(stdin, NULL, _IONBF, 0);
   setvbuf(stdout, NULL, _IONBF, 0);
-  fgets(input,MAX_INPUT,stdin);
-  size_t ln = strlen(input)-1;
+  fgets(input, MAX_INPUT, stdin);
+  size_t ln = strlen(input) - 1;
   if (input[ln] == '\n')
     input[ln] = '\0';
 }
 
-int check_command(struct ui_state *state)
-{ 
+int check_command(struct ui_state *state) {
   // char* string = malloc(strlen(state->input)+1);
   char **parsedString;
-  char* copyString = malloc(strlen(state->input)+1);
+  char *copyString = malloc(strlen(state->input) + 1);
 
   // strcpy(string, state->input);
   strcpy(copyString, state->input);
   parsedString = removeSpaces(copyString);
   int arraySize = returnStringArraySize(parsedString);
 
- 
-  if (parsedString[0] == NULL || strcmp(state->input,"\n") == 0) {
+
+  if (parsedString[0] == NULL || strcmp(state->input, "\n") == 0) {
     printf("error:Empty text is not permitted.\n");
     return 0;
   }
@@ -63,7 +62,7 @@ int check_command(struct ui_state *state)
   switch (stack_of_commands(parsedString[0])) {
     case 1:
       return checkLoginCommand(parsedString, arraySize, state->loggedIn);
-    case 2: 
+    case 2:
       return checkRegisterCommand(parsedString, arraySize, state->loggedIn);
     case 3:
       return checkUsersCommand(arraySize, state->loggedIn);
@@ -83,13 +82,12 @@ int check_command(struct ui_state *state)
   return 0;
 }
 
-int stack_of_commands(char* string)
-{
-  if(strcmp(string,"/login") == 0) return 1;
-  if(strcmp(string,"/register") == 0) return 2;
-  if(strcmp(string,"/users") == 0) return 3;
-  if(strcmp(string,"/exit") == 0) return 4;
-  if(string[0] != '/') return 5;
+int stack_of_commands(char *string) {
+  if (strcmp(string, "/login") == 0) return 1;
+  if (strcmp(string, "/register") == 0) return 2;
+  if (strcmp(string, "/users") == 0) return 3;
+  if (strcmp(string, "/exit") == 0) return 4;
+  if (string[0] != '/') return 5;
   return 0;
 }
 
@@ -133,19 +131,19 @@ int checkLoginCommand(char **string, int i, int loggedIn) {
     printf("You are already logged in.\n");
     return 0;
   }
-    if (i < 4 && i > 2) return 1;
-    else printf("error: Incorrect login command!\n");
+  if (i < 4 && i > 2) return 1;
+  else printf("error: Incorrect login command!\n");
   return 0;
 }
 
 int checkRegisterCommand(char **string, int i, int loggedIn) {
-  if(loggedIn) {
+  if (loggedIn) {
     printf("You are already logged in.\n");
     return 0;
   }
-    if (i < 4 && i > 2) return 1;
-    else printf("error: Incorrect register command!\n");
-  
+  if (i < 4 && i > 2) return 1;
+  else printf("error: Incorrect register command!\n");
+
   return 0;
 }
 
@@ -167,15 +165,12 @@ int parseMessage(char *string) {
   removeNewLine(string);
 
   if (string[0] != ' ' && string[0] != '\t'
-      && string[strlen(string)-1] != ' ' &&
-      string[strlen(string)-1] != '\t') 
-      {
-   
-      if (string[0] == '@') {return 1;}
-      else{ return 1;}
-      }
-  else 
-  {
+      && string[strlen(string) - 1] != ' ' &&
+      string[strlen(string) - 1] != '\t') {
+
+    if (string[0] == '@') { return 1; }
+    else { return 1; }
+  } else {
     printf("error: Not a good message format!\n");
   }
   return 0;

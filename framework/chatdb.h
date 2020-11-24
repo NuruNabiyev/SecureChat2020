@@ -26,21 +26,26 @@ int db_rc;
 
 int create_tables();
 
-int create_user(char *username, char* password, int fd);
-int check_login(char *username, char* password, int fd);
+int create_user(char *username, char *password, int fd);
 
-void broadcast_last_global(int fd);
+int check_login(char *username, char *password, int fd);
 
-int insert_global(char *received, char* username);
+void broadcast_last_global(int fd, char* username);
 
-int send_all_messages(int fd);
+int process_global(char *received, char *username);
+
+int process_private(char *fullmsg, char *recipient, char* curr_user);
+
+int send_all_messages(int fd, char* username);
 
 int set_logged_in(char *current_user);
 
 char *retrieve_all_users();
 
-void logout_user(char * current_user);
+void logout_user(char *current_user);
 
 char *get_current_time(void);
+
+int is_user_online(char *username);
 
 #endif //SECURECHAT2020_CHATDB_H

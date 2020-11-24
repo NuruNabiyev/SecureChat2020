@@ -27,8 +27,7 @@ struct worker_state {
  *        the client.
  */
 static int handle_s2w_notification(struct worker_state *state) {
-  // todo only broadcasting implemented for now
-  broadcast_last_global(state->api.fd);
+  broadcast_last_global(state->api.fd, state->current_user);
   return 0;
 }
 
@@ -107,6 +106,25 @@ static char *extract_password(char *payload) {
 }
 
 /**
+ * Extracts user from @user message
+ * @param private_msg full message from network
+ * @return username without @
+ */
+static char *extract_user_from_priv(char *private_msg) {
+  char username[500] = "";
+  for (int i = 0; i < strlen(private_msg); ++i) {
+    if (private_msg[i] == '@') continue;
+    if (private_msg[i] == ' ') break;
+    strncat(username, &(private_msg[i]), 1);
+  }
+  char null = '\0';
+  strncat(username, &null, 1);
+  char *usrPtr = (char *) malloc(sizeof(char *) * 500);
+  strncpy(usrPtr, username, strlen(username) + 1);
+  return usrPtr;
+}
+
+/**
  * Singe most of the code for login and register is same, except for db
  * @param is_register_or_login  1 for register, 0, for login
  * @param state of the worker
@@ -124,8 +142,48 @@ static void execute_credentials(int is_register_or_login, struct worker_state *s
   if (ret == 1) {
     state->current_user = username;
     set_logged_in(state->current_user);
-    send_all_messages(state->api.fd);
+    send_all_messages(state->api.fd, state->current_user);
   }
+}
+
+/**
+ * Checks if this user is online and send error message otherwise
+ * @param state
+ * @return 1 if im online, 0 if offline
+ */
+static int am_i_online(const struct worker_state *state) {
+  if (state->current_user == NULL) {
+    char err[] = "You must login first";
+    printf("You must login first\n");
+    send(state->api.fd, err, strlen(err), 0);
+    return 0;
+  }
+  return 1;
+}
+
+/**
+ * @return 0 in case of problem
+ */
+static int execute_private(struct worker_state *state, char *received) {
+  int online = am_i_online(state);
+  if (online == 0) return 0;
+  char *other_user = extract_user_from_priv(received);
+  int other_user_online = is_user_online(other_user);
+  if (other_user_online) {
+    int rc = process_private(received, other_user, state->current_user);
+    if (rc == 1) {
+      // notify us and recipient to extract last message (this one) and send
+      notify_workers(state);
+    }
+    else {
+      char err[] = "Error occurred, please retry\n";
+      send(state->api.fd, err, strlen(err), 0);
+    }
+  } else {
+    char err[] = "Recipient is offline or not found\n";
+    send(state->api.fd, err, strlen(err), 0);
+  }
+  return 1;
 }
 
 /**
@@ -142,9 +200,13 @@ static int execute_request(struct worker_state *state, const struct api_msg *msg
   } else if (strcmp(msg->received, "/users") == 0) {
     char *users = retrieve_all_users();
     send(state->api.fd, users, strlen(users), 0);
+  } else if (msg->received[0] == '@') {
+    execute_private(state, msg->received);
   } else {
+    int online = am_i_online(state);
+    if (online == 0) return 0;
     // add to db and ask every worker to broadcast
-    int inserted = insert_global(msg->received, state->current_user);
+    int inserted = process_global(msg->received, state->current_user);
     if (inserted == 1) {
       notify_workers(state);
     }

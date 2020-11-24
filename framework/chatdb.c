@@ -130,12 +130,13 @@ int check_login(char *username, char* password, int fd) {
  * TODO should retrieve and delegate sending to worker (e.g. return string)
  * @param fd client fd
  */
-void broadcast_last_global(int fd) {
+void broadcast_last_global(int fd, char* username) {
   db_rc = sqlite3_open(DB_NAME, &db);
   db_sql = "SELECT message FROM global_chat "
-           "where recipient IS NULL "
+           "where recipient IS NULL or recipient == ?1 or sender == ?1"
            "ORDER by id DESC LIMIT 1;";
   sqlite3_prepare_v2(db, db_sql, strlen(db_sql), &db_stmt, NULL);
+  sqlite3_bind_text(db_stmt, 1, username, -1, SQLITE_STATIC);
 
   // will be looped once
   while ((db_rc = sqlite3_step(db_stmt)) == SQLITE_ROW) {
@@ -151,7 +152,7 @@ void broadcast_last_global(int fd) {
  * Inserts global message to db
  * @return -1 if failed, 1 if all ok and proceed to notify workers
  */
-int insert_global(char *received, char* username) {
+int process_global(char *received, char* username) {
   char *curr_time = get_current_time();
   char *main_msg = (char *) malloc(strlen(received) + strlen(curr_time) + strlen(username));
   sprintf(main_msg, "%s %s: %s\n", curr_time, username, received);
@@ -181,15 +182,53 @@ int insert_global(char *received, char* username) {
   return 0;
 }
 
+int process_private(char *fullmsg, char *recipient, char* curr_user) {
+  // if users same - return error
+  if (strcmp(recipient, curr_user) == 0) {
+    printf("Same recipient and sender\n");
+    return -1;
+  }
+
+  char *curr_time = get_current_time();
+  char *main_msg = (char *) malloc(500);
+  sprintf(main_msg, "%s %s: %s\n", curr_time, curr_user, fullmsg);
+
+  db_rc = sqlite3_open(DB_NAME, &db);
+  if (db_rc != SQLITE_OK) {
+    puts("Could not open database");
+    return -1;
+  }
+
+  db_sql = "INSERT INTO global_chat (sender, recipient, message) "
+           "VALUES (?1, ?2, ?3);";
+  sqlite3_prepare_v2(db, db_sql, -1, &db_stmt, NULL);
+  sqlite3_bind_text(db_stmt, 1, curr_user, -1, SQLITE_STATIC);
+  sqlite3_bind_text(db_stmt, 2, recipient, -1, SQLITE_STATIC);
+  sqlite3_bind_text(db_stmt, 3, main_msg, -1, SQLITE_STATIC);
+  db_rc = sqlite3_step(db_stmt);
+  sqlite3_finalize(db_stmt);
+
+  // send to recipient and current user
+  if (db_rc == SQLITE_DONE) {
+    free(main_msg);
+    return 1;
+  } else {
+    printf("ERROR in adding message to table: %s\n", sqlite3_errmsg(db));
+    return -1;
+  }
+}
+
 /**
  * Query all messages and send to that client
  * @return 0 on success
  */
-int send_all_messages(int fd) {
+int send_all_messages(int fd, char* username) {
   db_rc = sqlite3_open(DB_NAME, &db);
   // todo also add his personal messages
-  char *db_sql = "SELECT message FROM global_chat where recipient IS NULL;";
+  db_sql = "SELECT message FROM global_chat "
+           "where recipient IS NULL or recipient == ?1 or sender == ?1;";
   sqlite3_prepare_v2(db, db_sql, strlen(db_sql), &db_stmt, NULL);
+  sqlite3_bind_text(db_stmt, 1, username, -1, SQLITE_STATIC);
 
   // todo gather to single payload and send?
   while ((db_rc = sqlite3_step(db_stmt)) == SQLITE_ROW) {
@@ -272,4 +311,23 @@ char *get_current_time(void) {
           timeinfo->tm_min,
           timeinfo->tm_sec);
   return time;
+}
+
+/**
+ * Checks user's online status
+ * @param username
+ * @return 0 if user not found OR offline, 1 if offline
+ */
+int is_user_online(char *username) {
+  db_sql = "SELECT COUNT(*) FROM users WHERE username = ?1 AND is_logged_in == 1";
+  sqlite3_prepare_v2(db, db_sql, -1, &db_stmt, NULL);
+  sqlite3_bind_text(db_stmt, 1, username, -1, SQLITE_STATIC);
+
+  int user_online = 0;
+  while ((db_rc = sqlite3_step(db_stmt)) == SQLITE_ROW) {
+    user_online = sqlite3_column_int(db_stmt, 0);
+  }
+  sqlite3_finalize(db_stmt);
+
+  return user_online;
 }

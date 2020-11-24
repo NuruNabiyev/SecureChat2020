@@ -56,7 +56,6 @@ static int client_process_command(struct client_state *state) {
 
   //here the text is a varibale. maybe place it in a struct? 
   if (ui_command_process(&state->ui) == 1) {
-    // state->ui.loggedIn = 1; // change this to check for AUTH
     send(state->api.fd, state->ui.input, strlen(state->ui.input), 0);
   }
   return 0;
