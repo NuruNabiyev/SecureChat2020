@@ -2,7 +2,7 @@
 
 #CFLAGS=-g -Wall -Werror -UDEBUG
 #CFLAGS=-g -Wall -UDEBUG
-#CFLAGS=-g
+CFLAGS=-g
 LDLIBS=-lsqlite3 -lcrypto -lssl
 
 all: client server

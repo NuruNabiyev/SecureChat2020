@@ -46,7 +46,7 @@ static int client_connect(struct client_state *state,
     return -1;
   }
   return fd;
-}
+}  
 
 static int client_process_command(struct client_state *state) {
 

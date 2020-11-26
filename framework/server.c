@@ -142,7 +142,7 @@ static int handle_connection(struct server_state *state) {
     if (errno == EINTR) return 0;
     perror("error: accepting new connection failed");
     return -1;
-  }
+  } 
 
   /* can we support more children? */
   if (state->child_count >= MAX_CHILDREN) {
@@ -354,7 +354,7 @@ static int handle_incoming(struct server_state *state) {
 
 int main(int argc, char **argv) {
   uint16_t port;
-  struct server_state state;
+  struct server_state state; 
 
   /* check arguments */
   if (argc != 2) usage();
