@@ -21,7 +21,7 @@ struct worker_state {
     char *current_user;
     /* TODO worker state variables go here */
 };
- 
+
 /**
  * @brief Reads an incoming notification from the server and notifies
  *        the client.
@@ -129,8 +129,15 @@ static char *extract_user_from_priv(char *private_msg) {
  * @param is_register_or_login  1 for register, 0, for login
  * @param state of the worker
  * @param received full message from user
+ * @return 0 in case of a problem
  */
-static void execute_credentials(int is_register_or_login, struct worker_state *state, char *received) {
+static int execute_credentials(int is_register_or_login, struct worker_state *state, char *received) {
+  if (state->current_user != NULL) {
+    char err[] = "You are already logged in\n";
+    send(state->api.fd, err, strlen(err), 0);
+    return 0;
+  }
+
   char *username = extract_username(received);
   char *password = extract_password(received); // todo hash and salt this
   int ret = -1;
@@ -146,18 +153,14 @@ static void execute_credentials(int is_register_or_login, struct worker_state *s
   }
 }
 
-/**
- * Checks if this user is online and send error message otherwise
- * @param state
- * @return 1 if im online, 0 if offline
- */
-static int am_i_online(const struct worker_state *state) {
+static int execute_users(struct worker_state *state) {
   if (state->current_user == NULL) {
-    char err[] = "You must login first";
-    printf("You must login first\n");
+    char err[] = "You must login first\n";
     send(state->api.fd, err, strlen(err), 0);
     return 0;
   }
+  char *users = retrieve_all_users();
+  send(state->api.fd, users, strlen(users), 0);
   return 1;
 }
 
@@ -165,8 +168,12 @@ static int am_i_online(const struct worker_state *state) {
  * @return 0 in case of problem
  */
 static int execute_private(struct worker_state *state, char *received) {
-  int online = am_i_online(state);
-  if (online == 0) return 0;
+  if (state->current_user == NULL) {
+    char err[] = "You must login first\n";
+    send(state->api.fd, err, strlen(err), 0);
+    return 0;
+  }
+
   char *other_user = extract_user_from_priv(received);
   int other_user_online = is_user_online(other_user);
   if (other_user_online) {
@@ -174,8 +181,7 @@ static int execute_private(struct worker_state *state, char *received) {
     if (rc == 1) {
       // notify us and recipient to extract last message (this one) and send
       notify_workers(state);
-    }
-    else {
+    } else {
       char err[] = "Error occurred, please retry\n";
       send(state->api.fd, err, strlen(err), 0);
     }
@@ -187,50 +193,42 @@ static int execute_private(struct worker_state *state, char *received) {
 }
 
 /**
+ * @return 0 in case of problem
+ */
+static int execute_public(struct worker_state *state, char *received) {
+  if (state->current_user == NULL) {
+    char err[] = "You must login first\n";
+    send(state->api.fd, err, strlen(err), 0);
+    return 0;
+  }
+
+  // add to db and ask every worker to broadcast
+  int inserted = process_global(received, state->current_user);
+  if (inserted == 1) {
+    notify_workers(state);
+  }
+  return 1;
+}
+
+/**
  * @brief         Handles a message coming from client
  * @param state   Initialized worker state
  * @param msg     Message to handle
  */
 static int execute_request(struct worker_state *state, const struct api_msg *msg) {
-  // FIXME needle
-  int check_input = 0; 
+  int check_input = 0;
   check_input = worker_check_command(msg->received);
   if (check_input == 2) {
     execute_credentials(1, state, msg->received);
   } else if (check_input == 1) {
     execute_credentials(0, state, msg->received);
   } else if (check_input == 3) {
-    char *users = retrieve_all_users();
-    send(state->api.fd, users, strlen(users), 0);
+    execute_users(state);
   } else if (msg->received[0] == '@' && check_input == 5) {
     execute_private(state, msg->received);
-  } else if(check_input == 5) {
-    int online = am_i_online(state);
-    if (online == 0) return 0;
-    // add to db and ask every worker to broadcast
-    int inserted = process_global(msg->received, state->current_user);
-    if (inserted == 1) {
-      notify_workers(state);
-    }
+  } else if (check_input == 5) {
+    execute_public(state, msg->received);
   }
-  // if (check_input == 2) {
-  //   execute_credentials(1, state, msg->received);
-  // } else if (strstr(msg->received, "/login") != NULL) {
-  //   execute_credentials(0, state, msg->received);
-  // } else if (strcmp(msg->received, "/users") == 0) {
-  //   char *users = retrieve_all_users();
-  //   send(state->api.fd, users, strlen(users), 0);
-  // } else if (msg->received[0] == '@') {
-  //   execute_private(state, msg->received);
-  // } else {
-  //   int online = am_i_online(state);
-  //   if (online == 0) return 0;
-  //   // add to db and ask every worker to broadcast
-  //   int inserted = process_global(msg->received, state->current_user);
-  //   if (inserted == 1) {
-  //     notify_workers(state);
-  //   }
-  // }
 
   return 0;
 }
@@ -406,11 +404,7 @@ void worker_start(int connfd, int server_fd) {
   exit(success ? 0 : 1);
 }
 
-
-
-
-
-int worker_check_command(char* message) {
+int worker_check_command(char *message) {
 
   char **parsedStrings;
   char *copyStrings = malloc(strlen(message) + 2);
