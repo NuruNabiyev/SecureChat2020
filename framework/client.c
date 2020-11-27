@@ -67,11 +67,10 @@ static int client_process_command(struct client_state *state) {
  * @param msg     Message to handle
  */
 static int execute_request(struct client_state *state, const struct api_msg *msg) {
-  // FIXME needle
-  if (strstr(msg->received, "You have been registered!") != NULL) {
+  if (strcmp(msg->received, "registration succeeded\n") == 0) {
     state->ui.loggedIn = 1;
     printf("registration succeeded\n");
-  } else if (strstr(msg->received, "You have been logged in!") != NULL) {
+  } else if (strcmp(msg->received, "authentication succeeded\n") == 0) {
     state->ui.loggedIn = 1;
     printf("authentication succeeded\n");
   } else {
