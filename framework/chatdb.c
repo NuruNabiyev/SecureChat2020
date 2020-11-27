@@ -81,7 +81,7 @@ int create_user(char *username, char* password, int fd) {
     sqlite3_finalize(db_stmt);
     if (db_rc == SQLITE_DONE) {
       // send to client
-      char *register_ok = "You have been registered!";
+      char *register_ok = "registration succeeded\n";
       send(fd, register_ok, strlen(register_ok), 0);
       return 1;
     } else {
@@ -114,7 +114,7 @@ int check_login(char *username, char* password, int fd) {
   sqlite3_finalize(db_stmt);
 
   if (password_matches == 1) {
-    char *text = "You have been logged in!";
+    char *text = "authentication succeeded\n";
     send(fd, text, strlen(text), 0);
     return 1;
   } else {
