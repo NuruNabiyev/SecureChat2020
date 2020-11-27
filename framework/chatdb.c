@@ -1,5 +1,6 @@
 
 #include "chatdb.h"
+#include "util.h"
 
 /**
  * Opens db and creates tables if do not exist
@@ -32,6 +33,7 @@ int create_tables() {
   sqlite3_prepare_v2(db, "CREATE TABLE IF NOT EXISTS \"users\" ("
                          "\"username\" TEXT NOT NULL PRIMARY KEY UNIQUE,"
                          "\"hash_pwd\" TEXT NOT NULL,"
+                         "\"salt_pwd\" TEXT NOT NULL,"
                          // 1 if true, 0 if offline
                          "\"is_logged_in\" INTEGER NOT NULL"
                          ");",
@@ -70,13 +72,19 @@ int create_user(char *username, char *password, int fd) {
   sqlite3_finalize(db_stmt);
 
   if (user_exists == 0) {
+    unsigned char hash[SHA256_DIGEST_LENGTH];
+    unsigned char new_salt[SHA256_DIGEST_LENGTH];
+    RAND_bytes(new_salt, sizeof(new_salt));
+    hash_password(password, hash, new_salt);
+
     // add user to table
-    db_sql = "INSERT INTO users (username, hash_pwd, is_logged_in) "
-             "VALUES (?1, ?2, ?3);";
+    db_sql = "INSERT INTO users (username, hash_pwd, salt_pwd, is_logged_in) "
+             "VALUES (?1, ?2, ?3, ?4);";
     sqlite3_prepare_v2(db, db_sql, -1, &db_stmt, NULL);
     sqlite3_bind_text(db_stmt, 1, username, -1, SQLITE_STATIC);
-    sqlite3_bind_text(db_stmt, 2, password, -1, SQLITE_STATIC);
-    sqlite3_bind_int(db_stmt, 3, 1);  // make user online
+    sqlite3_bind_text(db_stmt, 2, hash, -1, SQLITE_STATIC);
+    sqlite3_bind_text(db_stmt, 3, new_salt, -1, SQLITE_STATIC);
+    sqlite3_bind_int(db_stmt, 4, 1);  // make user online
     db_rc = sqlite3_step(db_stmt);
     sqlite3_finalize(db_stmt);
     if (db_rc == SQLITE_DONE) {
@@ -106,8 +114,12 @@ int check_login(char *username, char *password, int fd) {
 
   int password_matches = 0;
   while ((db_rc = sqlite3_step(db_stmt)) == SQLITE_ROW) {
-    const char *sql_pwd = sqlite3_column_text(db_stmt, 1);
-    if (strcmp(password, sql_pwd) == 0) {
+    const char *hash = sqlite3_column_text(db_stmt, 1);
+    const char *salt = sqlite3_column_text(db_stmt, 2);
+    unsigned char check_hash[SHA256_DIGEST_LENGTH];
+    hash_password(password, check_hash, salt);
+
+    if (memcmp(hash, check_hash, SHA256_DIGEST_LENGTH) == 0) {
       password_matches = 1;
     }
   }
