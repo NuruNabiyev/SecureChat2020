@@ -89,7 +89,6 @@ static char *extract_username(char *payload) {
 
   char *usrPtr = (char *) malloc(sizeof(char *) * 500);
   strncpy(usrPtr, username, strlen(username) + 1);
-  printf("username %s.\n", usrPtr);
   return usrPtr;
 }
 
@@ -110,7 +109,6 @@ static char *extract_password(char *payload) {
 
   char *pwdPtr = (char *) malloc(sizeof(char *) * 500);
   strncpy(pwdPtr, password, strlen(password) + 1);
-  printf("password %s.\n", pwdPtr);
   return pwdPtr;
 }
 
