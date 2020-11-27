@@ -23,7 +23,7 @@ int lookup_host_ipv4(const char *hostname, struct in_addr *addr) {
       assert(host->h_length == sizeof(*addr));
       memcpy(addr, host->h_addr_list[0], sizeof(*addr));
       return 0;
-    } 
+    }
     host = gethostent();
   }
 
@@ -54,6 +54,3 @@ int parse_port(const char *str, uint16_t *port_p) {
   *port_p = value;
   return 0;
 }
-
-
-

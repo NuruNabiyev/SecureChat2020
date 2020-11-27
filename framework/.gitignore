@@ -2,8 +2,3 @@
 /client
 /server
 /chat.db
-/api
-/chatdb
-/ui
-/util
-/worker

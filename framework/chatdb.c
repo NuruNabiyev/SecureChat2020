@@ -153,10 +153,8 @@ void broadcast_last_global(int fd, char* username) {
  * @return -1 if failed, 1 if all ok and proceed to notify workers
  */
 int process_global(char *received, char* username) {
-  char *curr_time = NULL;
-  char *main_msg = NULL;
-  curr_time = get_current_time();
-  main_msg = (char *) malloc(strlen(received) + strlen(curr_time) + strlen(username) + 3);
+  char *curr_time = get_current_time();
+  char *main_msg = (char *) malloc(strlen(received) + strlen(curr_time) + strlen(username));
   sprintf(main_msg, "%s %s: %s\n", curr_time, username, received);
 
   db_rc = sqlite3_open(DB_NAME, &db);
@@ -328,7 +326,7 @@ int is_user_online(char *username) {
   int user_online = 0;
   while ((db_rc = sqlite3_step(db_stmt)) == SQLITE_ROW) {
     user_online = sqlite3_column_int(db_stmt, 0);
-  } 
+  }
   sqlite3_finalize(db_stmt);
 
   return user_online;

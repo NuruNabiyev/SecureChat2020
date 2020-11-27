@@ -51,8 +51,3 @@ modules.order
 Module.symvers
 Mkfile.old
 dkms.conf
-/framework/api
-/framework/chatdb
-/framework/ui
-/framework/util
-/framework/worker

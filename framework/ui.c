@@ -17,7 +17,7 @@ void ui_state_free(struct ui_state *state) {
   state->loggedIn = 0;
   /* TODO free ui_state */
 }
- 
+
 /**
  * @brief         Initializes ui_state context
  * @param state   UI state to be initialized
@@ -162,7 +162,7 @@ void removeNewLine(char *string) {
 }
 
 int parseMessage(char *string) {
-  // removeNewLine(string);
+  removeNewLine(string);
 
   if (string[0] != ' ' && string[0] != '\t'
       && string[strlen(string) - 1] != ' ' &&
