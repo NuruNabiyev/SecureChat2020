@@ -19,6 +19,7 @@ struct worker_state {
     int server_fd;  /* server <-> worker bidirectional notification channel */
     int server_eof;
     char *current_user;
+    char *last_notified_msg; // same message should not be replied again
     /* TODO worker state variables go here */
 };
 
@@ -27,7 +28,15 @@ struct worker_state {
  *        the client.
  */
 static int handle_s2w_notification(struct worker_state *state) {
-  broadcast_last_global(state->api.fd, state->current_user);
+  // retrieve last message for this user, send to him if it is not as the last one
+  const char *last_msg = retrieve_last(state->current_user);
+  if (last_msg == NULL) return 0;
+  if (state->last_notified_msg == NULL
+      || strcmp(last_msg, state->last_notified_msg) != 0) {
+    send(state->api.fd, last_msg, strlen(last_msg), 0);
+    state->last_notified_msg = malloc(strlen(last_msg));
+    sprintf(state->last_notified_msg, "%s", last_msg);
+  }
   return 0;
 }
 
@@ -149,7 +158,10 @@ static int execute_credentials(int is_register_or_login, struct worker_state *st
   if (ret == 1) {
     state->current_user = username;
     set_logged_in(state->current_user);
-    send_all_messages(state->api.fd, state->current_user);
+    // need to initialize last sent message
+    char *last_msg = send_all_messages(state->api.fd, state->current_user);
+    state->last_notified_msg = malloc(strlen(last_msg));
+    sprintf(state->last_notified_msg, "%s", last_msg);
   }
 }
 

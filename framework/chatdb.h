@@ -30,13 +30,13 @@ int create_user(char *username, char *password, int fd);
 
 int check_login(char *username, char *password, int fd);
 
-void broadcast_last_global(int fd, char* username);
+char *retrieve_last(char *username);
 
 int process_global(char *received, char *username);
 
 int process_private(char *fullmsg, char *recipient, char* curr_user);
 
-int send_all_messages(int fd, char* username);
+char* send_all_messages(int fd, char* username);
 
 int set_logged_in(char *current_user);
 

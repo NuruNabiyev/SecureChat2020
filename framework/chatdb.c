@@ -56,7 +56,7 @@ int create_tables() {
  * Adds user into DB
  * @return 1 on success, 0 if error
  */
-int create_user(char *username, char* password, int fd) {
+int create_user(char *username, char *password, int fd) {
   db_rc = sqlite3_open(DB_NAME, &db);
 
   db_sql = "SELECT COUNT(*) FROM users WHERE username = ?1";
@@ -98,7 +98,7 @@ int create_user(char *username, char* password, int fd) {
   return 0;
 }
 
-int check_login(char *username, char* password, int fd) {
+int check_login(char *username, char *password, int fd) {
   db_rc = sqlite3_open(DB_NAME, &db);
   db_sql = "SELECT * FROM users WHERE username = ?1";
   sqlite3_prepare_v2(db, db_sql, -1, &db_stmt, NULL);
@@ -127,10 +127,9 @@ int check_login(char *username, char* password, int fd) {
 
 /**
  * Retrieves last message from db and sends to client
- * TODO should retrieve and delegate sending to worker (e.g. return string)
  * @param fd client fd
  */
-void broadcast_last_global(int fd, char* username) {
+char *retrieve_last(char *username) {
   db_rc = sqlite3_open(DB_NAME, &db);
   db_sql = "SELECT message FROM global_chat "
            "where recipient IS NULL or recipient == ?1 or sender == ?1"
@@ -139,20 +138,23 @@ void broadcast_last_global(int fd, char* username) {
   sqlite3_bind_text(db_stmt, 1, username, -1, SQLITE_STATIC);
 
   // will be looped once
+  char *last_msg = malloc(300);
+  int is_any = 0;
   while ((db_rc = sqlite3_step(db_stmt)) == SQLITE_ROW) {
-    const unsigned char *last_msg = sqlite3_column_text(db_stmt, 0);
-    // todo would be great not to handle sends in this loop, delegate to worker
-    int send_i = send(fd, last_msg, strlen(last_msg), 0);
-    printf("replied %i bytes\n", send_i);
+    const unsigned char * db_msg = sqlite3_column_text(db_stmt, 0);
+    sprintf(last_msg, "%s", db_msg);
+    is_any = 1;
   }
   sqlite3_finalize(db_stmt);
+  if (is_any == 0) return NULL;
+  return last_msg;
 }
 
 /**
  * Inserts global message to db
  * @return -1 if failed, 1 if all ok and proceed to notify workers
  */
-int process_global(char *received, char* username) {
+int process_global(char *received, char *username) {
   char *curr_time = NULL;
   char *main_msg = NULL;
   curr_time = get_current_time();
@@ -184,7 +186,7 @@ int process_global(char *received, char* username) {
   return 0;
 }
 
-int process_private(char *fullmsg, char *recipient, char* curr_user) {
+int process_private(char *fullmsg, char *recipient, char *curr_user) {
   // if users same - return error
   if (strcmp(recipient, curr_user) == 0) {
     printf("Same recipient and sender\n");
@@ -222,23 +224,24 @@ int process_private(char *fullmsg, char *recipient, char* curr_user) {
 
 /**
  * Query all messages and send to that client
- * @return 0 on success
+ * @return last sent message
  */
-int send_all_messages(int fd, char* username) {
+char* send_all_messages(int fd, char *username) {
   db_rc = sqlite3_open(DB_NAME, &db);
-  // todo also add his personal messages
   db_sql = "SELECT message FROM global_chat "
            "where recipient IS NULL or recipient == ?1 or sender == ?1;";
   sqlite3_prepare_v2(db, db_sql, strlen(db_sql), &db_stmt, NULL);
   sqlite3_bind_text(db_stmt, 1, username, -1, SQLITE_STATIC);
 
   // todo gather to single payload and send?
+  char *last_msg = malloc(300);
   while ((db_rc = sqlite3_step(db_stmt)) == SQLITE_ROW) {
     unsigned const char *curr_msg = sqlite3_column_text(db_stmt, 0);
     send(fd, curr_msg, strlen(curr_msg), 0);
+    sprintf(last_msg, "%s", curr_msg);
   }
   sqlite3_finalize(db_stmt);
-  return 0;
+  return last_msg;
 }
 
 int set_logged_in(char *current_user) {
@@ -283,7 +286,7 @@ char *retrieve_all_users() {
   return users;
 }
 
-void logout_user(char * current_user) {
+void logout_user(char *current_user) {
   // make is_logged_in false for this user
   db_rc = sqlite3_open(DB_NAME, &db);
   db_sql = "UPDATE users set is_logged_in = ?1 where username = ?2;";
@@ -328,7 +331,7 @@ int is_user_online(char *username) {
   int user_online = 0;
   while ((db_rc = sqlite3_step(db_stmt)) == SQLITE_ROW) {
     user_online = sqlite3_column_int(db_stmt, 0);
-  } 
+  }
   sqlite3_finalize(db_stmt);
 
   return user_online;
