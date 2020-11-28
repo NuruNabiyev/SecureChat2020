@@ -51,12 +51,16 @@ static int client_connect(struct client_state *state,
 static int client_process_command(struct client_state *state) {
 
   assert(state);
-  //TODO: Check why when using read it dumps memory 
-  //TODO: see if text can be dynamically alocated or can be put in a struct
 
-  //here the text is a varibale. maybe place it in a struct? 
+  setvbuf(stdin, NULL, _IONBF, 0);
+  setvbuf(stdout, NULL, _IONBF, 0);
+  
   if (ui_command_process(&state->ui) == 1) {
     send(state->api.fd, state->ui.input, strlen(state->ui.input), 0);
+  }
+  if(strcmp(state->ui.check_eof, "monkey") == 0)
+  {
+    state->eof = 1;
   }
   return 0;
 }

@@ -153,8 +153,7 @@ static void execute_credentials(int is_register_or_login, struct worker_state *s
  */
 static int am_i_online(const struct worker_state *state) {
   if (state->current_user == NULL) {
-    char err[] = "You must login first";
-    printf("You must login first\n");
+    char err[] = "error: command not currently available\n";
     send(state->api.fd, err, strlen(err), 0);
     return 0;
   }
@@ -193,44 +192,40 @@ static int execute_private(struct worker_state *state, char *received) {
  */
 static int execute_request(struct worker_state *state, const struct api_msg *msg) {
   // FIXME needle
-  int check_input = 0; 
-  check_input = worker_check_command(msg->received);
-  if (check_input == 2) {
-    execute_credentials(1, state, msg->received);
-  } else if (check_input == 1) {
-    execute_credentials(0, state, msg->received);
-  } else if (check_input == 3) {
-    char *users = retrieve_all_users();
-    send(state->api.fd, users, strlen(users), 0);
-  } else if (msg->received[0] == '@' && check_input == 5) {
-    execute_private(state, msg->received);
-  } else if(check_input == 5) {
-    int online = am_i_online(state);
-    if (online == 0) return 0;
-    // add to db and ask every worker to broadcast
-    int inserted = process_global(msg->received, state->current_user);
-    if (inserted == 1) {
-      notify_workers(state);
+  if(strlen(msg->received) <= 200)
+  {
+    int check_input = 0; 
+    check_input = worker_check_command(msg->received);
+    if (check_input == 2) {
+      execute_credentials(1, state, msg->received);
+    } else if (check_input == 1) {
+      execute_credentials(0, state, msg->received);
+    } else if (check_input == 3) {
+      char *users = retrieve_all_users();
+      send(state->api.fd, users, strlen(users), 0);
+    } else if (msg->received[0] == '@' && check_input == 5) {
+      execute_private(state, msg->received);
+    } else if(check_input == 5) {
+      int online = am_i_online(state);
+      if (online == 0) return 0;
+      // add to db and ask every worker to broadcast
+      int inserted = process_global(msg->received, state->current_user);
+      if (inserted == 1) {
+        notify_workers(state);
+      }
+    }
+    else if(check_input == 0)
+    {
+      char err[] = "error:Unknown or incorrect command! \n";
+      send(state->api.fd, err, strlen(err)+1, 0);
     }
   }
-  // if (check_input == 2) {
-  //   execute_credentials(1, state, msg->received);
-  // } else if (strstr(msg->received, "/login") != NULL) {
-  //   execute_credentials(0, state, msg->received);
-  // } else if (strcmp(msg->received, "/users") == 0) {
-  //   char *users = retrieve_all_users();
-  //   send(state->api.fd, users, strlen(users), 0);
-  // } else if (msg->received[0] == '@') {
-  //   execute_private(state, msg->received);
-  // } else {
-  //   int online = am_i_online(state);
-  //   if (online == 0) return 0;
-  //   // add to db and ask every worker to broadcast
-  //   int inserted = process_global(msg->received, state->current_user);
-  //   if (inserted == 1) {
-  //     notify_workers(state);
-  //   }
-  // }
+  else
+  {
+    char err[] = "error: A user cannot send more than 200 characters! \n";
+    send(state->api.fd, err, strlen(err)+1, 0);
+  }
+  
 
   return 0;
 }
@@ -421,7 +416,6 @@ int worker_check_command(char* message) {
 
 
   if (parsedStrings[0] == NULL || strcmp(message, "\n") == 0) {
-    printf("error:Empty text is not permitted.\n");
     return 0;
   }
 
@@ -435,11 +429,9 @@ int worker_check_command(char* message) {
     case 4:
       return checkExitCommand(parsedStrings, arraySize);
     case 5:
-      // if (!state->loggedIn) printf("Error: you are not logged in.\n");
       return parseMessage(message);
       break;
     default:
-      printf("Error: unknown command.\n");
       break;
   }
   free(parsedStrings);
@@ -481,6 +473,10 @@ int returnStringArraySize(char **string) {
 }
 
 int worker_checkUsersCommand(int i) {
+  // if(loggedin != 1)
+  // {
+  //   return 6;
+  // }
   if (i < 2) {
     return 3;
   }
@@ -489,43 +485,64 @@ int worker_checkUsersCommand(int i) {
 
 
 int worker_checkLoginCommand(char **string, int i) {
+    // if(loggedin != 1)
+  // {
+  //   return 6;
+  // }
   if (i < 4 && i > 2) return 1;
-  else printf("error: Incorrect login command!\n");
   return 0;
 }
 
 int worker_checkRegisterCommand(char **string, int i) {
+  // if(loggedin != 1)
+  // {
+  //   return 6;
+  // }
+
   if (i < 4 && i > 2) return 2;
-  else printf("error: Incorrect register command!\n");
 
   return 0;
 }
 
 int checkExitCommand(char **string, int i) {
-
-  if (i < 2) {
-    printf("The User exited the program!\n");
-    exit(0);
-  }
   return 0;
 }
 
-void removeNewLine(char *string) {
-  if (string[strlen(string) - 1] == '\n')
-    string[strlen(string) - 1] = '\0';
+void  remove_whitespaces(char *string) {
+  int i,j;
+
+  i = 0;
+  j = -1;
+
+  while(string[i] != '\0')
+  {
+    if(string[i] != ' ' && string[i] != '\t')
+    {
+      j = j +1;
+    }
+    i++;
+  }
+  string[j+1] = '\0';
 }
 
 int parseMessage(char *string) {
-  // removeNewLine(string);
+  // remove_whitespaces(string);
+  if(strlen(string) <= 200)
+  {
+    if (string[0] != ' ' && string[0] != '\t'
+        && string[strlen(string) - 1] != ' ' &&
+        string[strlen(string) - 1] != '\t') {
 
-  if (string[0] != ' ' && string[0] != '\t'
-      && string[strlen(string) - 1] != ' ' &&
-      string[strlen(string) - 1] != '\t') {
-
-    if (string[0] == '@') { return 5; }
-    else { return 5; }
-  } else {
-    printf("error: Not a good message format!\n");
+      if (string[0] == '@') { return 5; }
+      else { return 5; }
+    } else {
+      printf("error: invalid command format\n");
+    }
   }
+  else
+  {
+    printf("error: A message cannot be larger than 200 characters! \n");
+  }
+  
   return 0;
 }

@@ -1,0 +1,2 @@
+info: child exited
+info: child exited
