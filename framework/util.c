@@ -90,7 +90,7 @@ char* generate_keys(char *name, int server_or_client) {
 * server = 0
 * client = 1
 */
-char* ttp_get_pubkey(char *name, int server_or_client) {
+EVP_PKEY *ttp_get_pubkey(char *name, int server_or_client) {
 
 	FILE *fp;
 	char *CERT = malloc(2048);	// Don't forget to free this after using public key!
@@ -106,11 +106,18 @@ char* ttp_get_pubkey(char *name, int server_or_client) {
 			return NULL;
 		}
 	}
-	fgets(CERT, sizeof(CERT), fp);
-	if (CERT == NULL) {
+	//fgets(CERT, sizeof(CERT), fp);
+	//if (CERT == NULL) {
+	//	return NULL;
+	//}
+
+	X509 *cert = PEM_read_X509(fp, NULL, NULL, NULL);
+	if (!cert) {
 		return NULL;
 	}
-	return CERT;
+	EVP_PKEY *pubkey = X509_get_pubkey(cert); 
+	
+	return pubkey;
 }
 
 int hash_password(char *orig_pwd, unsigned char *hashed_pwd, const unsigned char *dest_salt) {
