@@ -3,7 +3,7 @@
 # Trusted Third Party
 
 function createKeys() {
-		if [ "$#" -ne 2 ]
+		if [ "$#" -ne 1 ]
 		then
 		echo "Usage: ./ttp.sh create [server/client]"
 		exit
@@ -14,7 +14,7 @@ function createKeys() {
 		mkdir ttp-keys
 		fi
 
-		if [ "$3" == "server" ]
+		if [ "$1" == "server" ]
 		then
 		if ! [ -d ./serverkeys ]
 		then
@@ -25,10 +25,10 @@ function createKeys() {
 			mkdir clientkeys
 		fi
 		else
-		if ! [ -d ./clientkeys/"$3" ]
+		if ! [ -d ./clientkeys/"$1" ]
 		then
 			cd clientkeys
-			mkdir "$3"
+			mkdir "$1"
 			cd -
 		fi
 		fi
@@ -43,7 +43,7 @@ function createKeys() {
 		cp ./ttp-keys/ca-cert.pem ./clientkeys/ca-cert.pem
 		fi
 
-		if [ "$3" == "server" ]
+		if [ "$1" == "server" ]
 		then
 		 	openssl genrsa -out ./serverkeys/privkey-server.pem
 		openssl req -new \
@@ -57,19 +57,23 @@ function createKeys() {
 		openssl rsa -pubout \
 			 -in ./serverkeys/privkey-server.pem \
 			 -out ./serverkeys/pubkey-server.pem
+
+			 echo "`pwd`/serverkeys/privkey-server.pem"
 		else
-		openssl genrsa -out ./clientkeys/"$3"/privkey-client"$3".pem
-		openssl req -new -key ./clientkeys/"$3"/privkey-client"$3".pem \
-			 -out ./ttp-keys/client"$3"-csr.pem \
+		openssl genrsa -out ./clientkeys/"$1"/privkey-client"$1".pem
+		openssl req -new -key ./clientkeys/"$1"/privkey-client"$1".pem \
+			 -out ./ttp-keys/client"$1"-csr.pem \
 			 -nodes \
-			 -subj "/CN=client\.$3-example\.com/"
+			 -subj "/CN=client\.$1-example\.com/"
 		openssl x509 -req -CA ./ttp-keys/ca-cert.pem \
 			 -CAkey ./ttp-keys/ca-key.pem -CAcreateserial \
-			 -in ./ttp-keys/client"$3"-csr.pem \
-			 -out ./clientkeys/"$3"/client"$3"-ca-cert.pem
+			 -in ./ttp-keys/client"$1"-csr.pem \
+			 -out ./clientkeys/"$1"/client"$1"-ca-cert.pem
 		openssl rsa -pubout \
-			 -in ./clientkeys/"$3"/privkey-client"$3".pem \
-			 -out ./clientkeys/"$3"/pubkey-client"$3".pem
+			 -in ./clientkeys/"$1"/privkey-client"$1".pem \
+			 -out ./clientkeys/"$1"/pubkey-client"$1".pem
+
+			 echo "`pwd`/clientkeys/$1/privkey-client$1.pem"
 		fi
 
 		rm -f ./ttp-keys/server-csr.pem
@@ -98,7 +102,7 @@ END_PATH=""
 
 if [ "$1" == "create" ]
 then
-	createKeys $1 $2
+	createKeys $2
 fi
 
 if [ "$1" == "verify" ]
