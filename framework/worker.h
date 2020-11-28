@@ -34,6 +34,6 @@ void removeNewLine(char *string);
 
 
 int stack_of_commands(char* string);
-
+void bruteforce_check();
 
 #endif /* !defined(_WORKER_H_) */

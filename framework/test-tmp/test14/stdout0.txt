@@ -1,7 +1,7 @@
-username user2.
-password iloveyou.
-replied 34 bytes
 username erik.
 password hunter2.
+replied 34 bytes
+username user2.
+password iloveyou.
 replied 34 bytes
 ERROR updating data: disk I/O error

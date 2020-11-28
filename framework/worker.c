@@ -13,6 +13,9 @@
 #include "worker.h"
 #include "chatdb.h"
 
+
+int bruteforce_count = 0;
+ 
 struct worker_state {
     struct api_state api;
     int eof;
@@ -21,7 +24,8 @@ struct worker_state {
     char *current_user;
     /* TODO worker state variables go here */
 };
- 
+
+
 /**
  * @brief Reads an incoming notification from the server and notifies
  *        the client.
@@ -138,6 +142,10 @@ static void execute_credentials(int is_register_or_login, struct worker_state *s
     ret = create_user(username, password, state->api.fd);
   } else if (is_register_or_login == 0) {
     ret = check_login(username, password, state->api.fd);
+    if(ret == 0)
+    {
+      bruteforce_count++;
+    }
   }
   if (ret == 1) {
     state->current_user = username;
@@ -199,7 +207,8 @@ static int execute_request(struct worker_state *state, const struct api_msg *msg
     if (check_input == 2) {
       execute_credentials(1, state, msg->received);
     } else if (check_input == 1) {
-      execute_credentials(0, state, msg->received);
+        // bruteforce_check(state); 
+        execute_credentials(0, state, msg->received);
     } else if (check_input == 3) {
       char *users = retrieve_all_users();
       send(state->api.fd, users, strlen(users), 0);
@@ -340,6 +349,7 @@ static int worker_state_init(struct worker_state *state, int connfd, int server_
   /* initialize */
   memset(state, 0, sizeof(*state));
   state->server_fd = server_fd;
+  bruteforce_count = 0;
 
   /* set up API state */
   api_state_init(&state->api, connfd);
@@ -356,7 +366,7 @@ static int worker_state_init(struct worker_state *state, int connfd, int server_
  */
 static void worker_state_free(struct worker_state *state) {
   logout_user(state->current_user);
-
+  bruteforce_count = 0;
   /* clean up API state */
   api_state_free(&state->api);
 
@@ -421,9 +431,23 @@ int worker_check_command(char* message) {
 
   switch (stack_of_commands(parsedStrings[0])) {
     case 1:
-      return worker_checkLoginCommand(parsedStrings, arraySize);
+      if(worker_checkLoginCommand(parsedStrings, arraySize) ==1)
+      {
+        char* parsedMessage = malloc(strlen(message) + 1);
+        sprintf(parsedMessage, "%s %s %s",parsedStrings[0],parsedStrings[1],parsedStrings[2]);
+        strcpy(message, parsedMessage);
+        return 1;
+      }
+      break;
     case 2:
-      return worker_checkRegisterCommand(parsedStrings, arraySize);
+      if(worker_checkLoginCommand(parsedStrings, arraySize) ==1)
+      {
+        char* parsedMessage = malloc(strlen(message) + 1);
+        sprintf(parsedMessage, "%s %s %s",parsedStrings[0],parsedStrings[1],parsedStrings[2]);
+        strcpy(message, parsedMessage);
+        return 2;
+      }
+      break;
     case 3:
       return worker_checkUsersCommand(arraySize);
     case 4:
@@ -473,10 +497,6 @@ int returnStringArraySize(char **string) {
 }
 
 int worker_checkUsersCommand(int i) {
-  // if(loggedin != 1)
-  // {
-  //   return 6;
-  // }
   if (i < 2) {
     return 3;
   }
@@ -485,20 +505,12 @@ int worker_checkUsersCommand(int i) {
 
 
 int worker_checkLoginCommand(char **string, int i) {
-    // if(loggedin != 1)
-  // {
-  //   return 6;
-  // }
+
   if (i < 4 && i > 2) return 1;
   return 0;
 }
 
 int worker_checkRegisterCommand(char **string, int i) {
-  // if(loggedin != 1)
-  // {
-  //   return 6;
-  // }
-
   if (i < 4 && i > 2) return 2;
 
   return 0;
@@ -545,4 +557,12 @@ int parseMessage(char *string) {
   }
   
   return 0;
+}
+
+void bruteforce_check()
+{
+  if(bruteforce_count >20)
+  {
+    sleep(5);
+  }
 }

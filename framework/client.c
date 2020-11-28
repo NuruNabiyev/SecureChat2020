@@ -58,7 +58,7 @@ static int client_process_command(struct client_state *state) {
   if (ui_command_process(&state->ui) == 1) {
     send(state->api.fd, state->ui.input, strlen(state->ui.input), 0);
   }
-  if(strcmp(state->ui.check_eof, "monkey") == 0)
+  if(strcmp(state->ui.check_eof, "secProg") == 0)
   {
     state->eof = 1;
   }
@@ -78,7 +78,7 @@ static int execute_request(struct client_state *state, const struct api_msg *msg
   } else if (strstr(msg->received, "You have been logged in!") != NULL) {
     state->ui.loggedIn = 1;
     printf("authentication succeeded\n");
-  } else {
+  }  else {
     // process any message
     printf("%s", msg->received);
   }

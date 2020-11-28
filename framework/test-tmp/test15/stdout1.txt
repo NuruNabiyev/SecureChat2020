@@ -1,4 +1,4 @@
 authentication succeeded
-2020-11-28 16:25:54 erik: pubmsg1
-2020-11-28 16:26:07 erik: pubmsg2
+2020-11-28 22:21:24 erik: pubmsg1
+2020-11-28 22:21:37 erik: pubmsg2
 Recipient is offline or not found

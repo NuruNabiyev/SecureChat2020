@@ -1,11 +1,11 @@
 username erik.
 password hunter2.
-replied 47 bytes
+replied 50 bytes
 username sam.
 password hereforfun.
 replied 34 bytes
 ERROR updating data: disk I/O error
 username user2.
 password iloveyou.
-replied 47 bytes
+replied 50 bytes
 ERROR updating data: disk I/O error

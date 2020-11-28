@@ -49,4 +49,9 @@ void removeNewLine(char *string);
 int stack_of_commands(char* string);
 
 
+int verify_username(char* string);
+
+int verify_password(char* string);
+
+
 #endif /* defined(_UI_H_) */

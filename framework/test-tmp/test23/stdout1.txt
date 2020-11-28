@@ -1,5 +1,5 @@
 authentication succeeded
-2020-11-28 16:25:54 erik: pubmsg1
-2020-11-28 16:26:07 erik: pubmsg2
-2020-11-28 16:26:34 user2: @erik this is privm
+2020-11-28 22:21:24 erik: pubmsg1
+2020-11-28 22:21:37 erik: pubmsg2
+2020-11-28 22:22:04 user2: @erik this is privmsg2
 error: command not currently available

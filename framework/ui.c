@@ -33,7 +33,7 @@ void ui_state_init(struct ui_state *state) {
 
 int ui_command_process(struct ui_state *state) {
   readLine(state);
-  if(strcmp(state->check_eof, "monkey") != 0)
+  if(strcmp(state->check_eof, "secProg") != 0)
     return check_command(state);
   else
   {
@@ -42,11 +42,10 @@ int ui_command_process(struct ui_state *state) {
 }
 
 void readLine(struct ui_state *state){
-  // read(0,input,MAX_INPUT);
   strcpy(state->check_eof,"test");
   if(fgets(state->input, MAX_INPUT,stdin) == NULL)
   {
-    strcpy(state->check_eof, "monkey");
+    strcpy(state->check_eof, "secProg");
   }
   if(state->check_eof != NULL)
   {
@@ -228,15 +227,22 @@ void  remove_whitespaces(char *string) {
   k = 0;
   if(string[0] == ' ' || string[i] == '\t' )
   {
-    while(string[i] == ' ' &&  string[i] == '\t')
+    while(string[i] == ' ' ||  string[i] == '\t')
     {
       i++;
     }
   }
-
-  while(string[j] == ' ' || string[i] == '\t')
+  while(string[j] == '\0')
   {
-    j = j - 1;
+    j = j -1;
+  }
+  
+  if(string[j-1] == ' ' || string[j-1] == '\t' )
+  {
+    while(string[j] == ' ' || string[j] == '\t')
+    {
+      j = j - 1;
+    }
   }
 
   for(i; i <=j ; i++)
@@ -244,11 +250,13 @@ void  remove_whitespaces(char *string) {
     copystring[k] = string[i];
     k = k + 1; 
   }
-  printf("%s \n", copystring);
+  copystring[k+1] = '\0';
+  strcpy(string, copystring);
+  free(copystring);
 }
 
 int parseMessage(char *string) {
-  // remove_whitespaces(string);
+  remove_whitespaces(string);
   if(strlen(string) <= 200)
   {
     if (string[0] != ' ' && string[0] != '\t'
@@ -274,7 +282,7 @@ int verify_password(char* string)
 {
   regex_t regex;
   int first_check = 0;
-  first_check = regcomp(&regex,"[a-zA-Z0-9@$!%*?^&]\\{8,15\\}", 0);
+  first_check = regcomp(&regex,"[a-zA-Z0-9@$!%*?^&]\\{1,15\\}", 0);
   if (first_check != 0) 
   {
     printf("Regex did not complie correctly \n");
