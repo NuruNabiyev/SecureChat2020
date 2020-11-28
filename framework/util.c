@@ -6,6 +6,9 @@
 #include <string.h>
 #include <unistd.h>
 
+#include <openssl/pem.h>
+#include <openssl/x509.h>
+
 #include "util.h"
 
 int lookup_host_ipv4(const char *hostname, struct in_addr *addr) {
@@ -53,6 +56,61 @@ int parse_port(const char *str, uint16_t *port_p) {
 
   *port_p = value;
   return 0;
+}
+
+/*
+* server = 0
+* client = 1
+*/
+char* generate_keys(char *name, int server_or_client) {
+
+	FILE *fp;
+	char *PATH = malloc(128); // Don't forget to free this after using!
+	
+	if (server_or_client) {
+		fp = popen("./ttp.sh create " + *name, "r");
+		if (fp == NULL) {
+			return NULL;
+		}
+	} else {
+		fp = popen("./ttp.sh create server", "r");
+		if (fp == NULL) {
+			return NULL;
+		}
+	}
+
+	fgets(PATH, sizeof(PATH), fp);
+	if (PATH == NULL) {
+		return NULL;
+	}
+	return PATH;
+}
+
+/*
+* server = 0
+* client = 1
+*/
+char* ttp_get_pubkey(char *name, int server_or_client) {
+
+	FILE *fp;
+	char *CERT = malloc(2048);	// Don't forget to free this after using public key!
+
+	if (server_or_client) {
+		fp = popen("./ttp.sh verify" + *name, "r");
+		if (fp == NULL) {
+			return NULL;
+		}
+	} else {
+		fp = popen("./ttp.sh verify server", "r");
+		if (fp == NULL) {
+			return NULL;
+		}
+	}
+	fgets(CERT, sizeof(CERT), fp);
+	if (CERT == NULL) {
+		return NULL;
+	}
+	return CERT;
 }
 
 int hash_password(char *orig_pwd, unsigned char *hashed_pwd, const unsigned char *dest_salt) {
