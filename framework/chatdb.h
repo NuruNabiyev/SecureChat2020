@@ -34,9 +34,9 @@ char *retrieve_last(char *username);
 
 int process_global(char *received, char *username);
 
-int process_private(char *fullmsg, char *recipient, char* curr_user);
+int process_private(char *fullmsg, char *recipient, char *curr_user);
 
-char* send_all_messages(int fd, char* username);
+char *send_all_messages(int fd, char *username);
 
 int set_logged_in(char *current_user);
 

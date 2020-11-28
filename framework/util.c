@@ -18,12 +18,12 @@ int lookup_host_ipv4(const char *hostname, struct in_addr *addr) {
   host = gethostbyname(hostname);
   while (host) {
     if (host->h_addrtype == AF_INET &&
-      host->h_addr_list &&
-      host->h_addr_list[0]) {
+        host->h_addr_list &&
+        host->h_addr_list[0]) {
       assert(host->h_length == sizeof(*addr));
       memcpy(addr, host->h_addr_list[0], sizeof(*addr));
       return 0;
-    } 
+    }
     host = gethostent();
   }
 
@@ -55,5 +55,13 @@ int parse_port(const char *str, uint16_t *port_p) {
   return 0;
 }
 
+int hash_password(char *orig_pwd, unsigned char *hashed_pwd, const unsigned char *dest_salt) {
+  SHA256_CTX ctx;
+  SHA256_Init(&ctx);
+  SHA256_Update(&ctx, orig_pwd, strlen(orig_pwd) + 1);
+  SHA256_Update(&ctx, dest_salt, SHA256_DIGEST_LENGTH);
+  SHA256_Final(hashed_pwd, &ctx);
+  return 0;
+}
 
 
