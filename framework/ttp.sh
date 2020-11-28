@@ -9,6 +9,8 @@ function createKeys() {
 		exit
 		fi
 
+		echo "`date`: Creating keys for $1." >> ttp.log
+
 		if ! [ -d ./ttp-keys ] 
 		then
 		mkdir ttp-keys
@@ -35,45 +37,45 @@ function createKeys() {
 
 		if ! [ "$(ls -A ./ttp-keys)" ]
 		then
-		openssl genrsa -out ./ttp-keys/ca-key.pem
-		openssl req -new -x509 \
-			 -key ./ttp-keys/ca-key.pem \
-			 -out ./ttp-keys/ca-cert.pem \
-			 -nodes -subj '/CN=ca\.sp-group9\.com/'
-		cp ./ttp-keys/ca-cert.pem ./clientkeys/ca-cert.pem
+			openssl genrsa -out ./ttp-keys/ca-key.pem >/dev/null
+			openssl req -new -x509 \
+				 -key ./ttp-keys/ca-key.pem \
+				 -out ./ttp-keys/ca-cert.pem \
+				 -nodes -subj '/CN=ca\.sp-group9\.com/' \
+				 >/dev/null
+			cp ./ttp-keys/ca-cert.pem ./clientkeys/ca-cert.pem
 		fi
 
 		if [ "$1" == "server" ]
 		then
-		 	openssl genrsa -out ./serverkeys/privkey-server.pem
-		openssl req -new \
-			 -key ./serverkeys/privkey-server.pem \
-			 -out ./ttp-keys/server-csr.pem \
-			 -nodes -subj '/CN=ca\.sp-group9\.com/'
-		openssl x509 -req -CA ./ttp-keys/ca-cert.pem \
-			 -CAkey ./ttp-keys/ca-key.pem -CAcreateserial \
-			 -in ./ttp-keys/server-csr.pem \
-			 -out ./serverkeys/server-ca-cert.pem
-		openssl rsa -pubout \
-			 -in ./serverkeys/privkey-server.pem \
-			 -out ./serverkeys/pubkey-server.pem
-
-			 echo "`pwd`/serverkeys/privkey-server.pem"
+		 	openssl genrsa -out ./serverkeys/privkey-server.pem >/dev/null
+			openssl req -new \
+				 -key ./serverkeys/privkey-server.pem \
+				 -out ./ttp-keys/server-csr.pem \
+				 -nodes -subj '/CN=ca\.sp-group9\.com/' >/dev/null
+			openssl x509 -req -CA ./ttp-keys/ca-cert.pem \
+				 -CAkey ./ttp-keys/ca-key.pem -CAcreateserial \
+				 -in ./ttp-keys/server-csr.pem \
+				 -out ./serverkeys/server-ca-cert.pem >/dev/null
+			openssl rsa -pubout \
+				 -in ./serverkeys/privkey-server.pem \
+				 -out ./serverkeys/pubkey-server.pem >/dev/null
+				 echo "`pwd`/serverkeys"
 		else
-		openssl genrsa -out ./clientkeys/"$1"/privkey-client"$1".pem
-		openssl req -new -key ./clientkeys/"$1"/privkey-client"$1".pem \
-			 -out ./ttp-keys/client"$1"-csr.pem \
-			 -nodes \
-			 -subj "/CN=client\.$1-example\.com/"
-		openssl x509 -req -CA ./ttp-keys/ca-cert.pem \
-			 -CAkey ./ttp-keys/ca-key.pem -CAcreateserial \
-			 -in ./ttp-keys/client"$1"-csr.pem \
-			 -out ./clientkeys/"$1"/client"$1"-ca-cert.pem
-		openssl rsa -pubout \
-			 -in ./clientkeys/"$1"/privkey-client"$1".pem \
-			 -out ./clientkeys/"$1"/pubkey-client"$1".pem
+			openssl genrsa -out ./clientkeys/"$1"/privkey-client"$1".pem >/dev/null
+			openssl req -new -key ./clientkeys/"$1"/privkey-client"$1".pem \
+				 -out ./ttp-keys/client"$1"-csr.pem \
+				 -nodes \
+				 -subj "/CN=client\.$1-example\.com/" >/dev/null
+			openssl x509 -req -CA ./ttp-keys/ca-cert.pem \
+				 -CAkey ./ttp-keys/ca-key.pem -CAcreateserial \
+				 -in ./ttp-keys/client"$1"-csr.pem \
+				 -out ./clientkeys/"$1"/client"$1"-ca-cert.pem >/dev/null
+			openssl rsa -pubout \
+				 -in ./clientkeys/"$1"/privkey-client"$1".pem \
+				 -out ./clientkeys/"$1"/pubkey-client"$1".pem >/dev/null
 
-			 echo "`pwd`/clientkeys/$1/privkey-client$1.pem"
+				 echo "`pwd`/clientkeys/$1"
 		fi
 
 		rm -f ./ttp-keys/server-csr.pem
@@ -87,18 +89,23 @@ function verifyKeys() {
 		exit
 	fi
 
+	echo "`date`: Verifying keys for $2." >> ttp.log
+
 	if [ "$2" == "server" ]
 	then
-		echo "`pwd`/serverkeys/pubkey-server.pem"
+		cat ./serverkeys/pubkey-server.pem
 		return 
 	else [ -e ./clientkeys/"$2"/pubkey-client"$2".pem ]
-		echo "`pwd`/clientkeys/"$2"/pubkey-client"$2".pem"
+		cat ./clientkeys/"$2"/pubkey-client"$2".pem
 		return
 	fi
 	echo "Key not found in directory!"
 }
 
-END_PATH=""
+if [ ! -e ./ttp.log ]
+then
+	touch ./ttp.log
+fi
 
 if [ "$1" == "create" ]
 then
