@@ -335,8 +335,8 @@ char *get_current_time(void) {
  * @param username
  * @return 0 if user not found OR offline, 1 if offline
  */
-int is_user_online(char *username) {
-  db_sql = "SELECT COUNT(*) FROM users WHERE username = ?1 AND is_logged_in == 1";
+int user_exists(char *username) {
+  db_sql = "SELECT COUNT(*) FROM users WHERE username = ?1";
   sqlite3_prepare_v2(db, db_sql, -1, &db_stmt, NULL);
   sqlite3_bind_text(db_stmt, 1, username, -1, SQLITE_STATIC);
 

@@ -46,6 +46,6 @@ void logout_user(char *current_user);
 
 char *get_current_time(void);
 
-int is_user_online(char *username);
+int user_exists(char *username);
 
 #endif //SECURECHAT2020_CHATDB_H

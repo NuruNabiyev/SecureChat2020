@@ -185,8 +185,8 @@ static int execute_private(struct worker_state *state, char *received) {
   }
 
   char *other_user = extract_user_from_priv(received);
-  int other_user_online = is_user_online(other_user);
-  if (other_user_online) {
+  int other_user_exists = user_exists(other_user);
+  if (other_user_exists) {
     int rc = process_private(received, other_user, state->current_user);
     if (rc == 1) {
       // notify us and recipient to extract last message (this one) and send
@@ -196,7 +196,7 @@ static int execute_private(struct worker_state *state, char *received) {
       send(state->api.fd, err, strlen(err), 0);
     }
   } else {
-    char err[] = "Recipient is offline or not found\n";
+    char err[] = "Recipient is not found\n";
     send(state->api.fd, err, strlen(err), 0);
   }
   return 1;
