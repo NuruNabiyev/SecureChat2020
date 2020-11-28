@@ -11,6 +11,10 @@ int max(int x, int y);
 
 int parse_port(const char *str, uint16_t *port_p);
 
+char *generate_keys(char *name, int server_or_client);
+
+EVP_PKEY *ttp_get_pubkey(char *name, int server_or_client);
+
 int hash_password(char *orig_pwd, unsigned char *hashed_pwd, const unsigned char *dest_salt);
 
 #endif /* defined(_UTIL_H_) */

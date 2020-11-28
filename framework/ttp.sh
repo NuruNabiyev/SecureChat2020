@@ -93,12 +93,12 @@ function verifyKeys() {
 
 	if [ "$2" == "server" ]
 	then
-		#cat ./serverkeys/pubkey-server.pem
-		openssl x509 -in ./serverkeys/server-ca-cert.pem -text -noout
+		cat ./serverkeys/server-ca-cert.pem
+		#openssl x509 -in ./serverkeys/server-ca-cert.pem -text -noout
 		return 
 	else [ -e ./clientkeys/"$2"/pubkey-client"$2".pem ]
-		#cat ./clientkeys/"$2"/pubkey-client"$2".pem
-		openssl x509 -in ./clientkeys/$2/client$2-ca-cert.pem -text -noout
+		cat ./clientkeys/"$2"/client"$2"-ca-cert.pem
+		#openssl x509 -in ./clientkeys/$2/client$2-ca-cert.pem -text -noout
 		return
 	fi
 	echo "Key not found in directory!"

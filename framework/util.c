@@ -62,18 +62,21 @@ int parse_port(const char *str, uint16_t *port_p) {
 * server = 0
 * client = 1
 */
-char* generate_keys(char *name, int server_or_client) {
+char *generate_keys(char *name, int server_or_client) {
 
 	FILE *fp;
 	char *PATH = malloc(128); // Don't forget to free this after using!
+	char cmd[64];
 	
 	if (server_or_client) {
-		fp = popen("./ttp.sh create " + *name, "r");
+		snprintf(cmd, 64, "./ttp.sh create %s >/dev/null 2>&1", name);
+		fp = popen(cmd, "r");
 		if (fp == NULL) {
 			return NULL;
 		}
 	} else {
-		fp = popen("./ttp.sh create server", "r");
+		snprintf(cmd, 64, "./ttp.sh create server >/dev/null 2>&1");
+		fp = popen(cmd, "r");
 		if (fp == NULL) {
 			return NULL;
 		}
@@ -94,27 +97,31 @@ EVP_PKEY *ttp_get_pubkey(char *name, int server_or_client) {
 
 	FILE *fp;
 	char *CERT = malloc(2048);	// Don't forget to free this after using public key!
+	char cmd[64];
+	time_t *ptime;
 
 	if (server_or_client) {
-		fp = popen("./ttp.sh verify" + *name, "r");
-		if (fp == NULL) {
-			return NULL;
-		}
+		snprintf(cmd, 64, "./ttp.sh verify %s", name);
 	} else {
-		fp = popen("./ttp.sh verify server", "r");
-		if (fp == NULL) {
-			return NULL;
-		}
+		snprintf(cmd, 64, "./ttp.sh verify server");
 	}
-	//fgets(CERT, sizeof(CERT), fp);
-	//if (CERT == NULL) {
-	//	return NULL;
-	//}
+	
+	fp = popen(cmd, "r");
+	if (fp == NULL) {
+		return NULL;
+	}
 
 	X509 *cert = PEM_read_X509(fp, NULL, NULL, NULL);
 	if (!cert) {
 		return NULL;
 	}
+
+	int i = X509_cmp_time(X509_get_notBefore(cert), ptime);
+	int j = X509_cmp_time(X509_get_notAfter(cert), ptime);
+	if (i != 1 || j != 1) {
+		return NULL;
+	}
+	
 	EVP_PKEY *pubkey = X509_get_pubkey(cert); 
 	
 	return pubkey;

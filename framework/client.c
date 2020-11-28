@@ -182,6 +182,7 @@ static void usage(void) {
 }
 
 int main(int argc, char **argv) {
+
   int fd;
   uint16_t port;
   struct client_state state;
