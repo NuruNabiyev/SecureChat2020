@@ -7,3 +7,6 @@
 /ui
 /util
 /worker
+/clientkeys
+/serverkeys
+/ttp-keys

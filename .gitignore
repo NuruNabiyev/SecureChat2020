@@ -56,3 +56,6 @@ dkms.conf
 /framework/ui
 /framework/util
 /framework/worker
+/clientkeys
+/serverkeys
+/ttp-keys
