@@ -395,12 +395,17 @@ void worker_start(int connfd, int server_fd) {
 
   ctx = SSL_CTX_new(TLS_server_method());
   ssl = SSL_new(ctx);
-  int ret = SSL_use_certificate_file(ssl, "/serverkeys/server-ca-cert.pem", SSL_FILETYPE_PEM);
+  int ret = SSL_use_certificate_file(ssl, "serverkeys/server-ca-cert.pem", SSL_FILETYPE_PEM);
   if (ret < 1)
     puts("error: SSL_use_certificate_file");
-  ret =  SSL_use_PrivateKey_file(ssl, "/serverkeys/privkey-server.pem", SSL_FILETYPE_PEM);
+  ret =  SSL_use_PrivateKey_file(ssl, "serverkeys/privkey-server.pem", SSL_FILETYPE_PEM);
   if (ret < 1)
     puts("error: SSL_use_PrivateKey_file");
+
+  /* set up SSL connection with client */
+  set_nonblock(connfd);
+  SSL_set_fd(ssl, connfd);
+  ssl_block_accept(ssl, connfd);
 
   /* initialize worker state */
   if (worker_state_init(&state, connfd, server_fd) != 0) {

@@ -213,7 +213,7 @@ int main(int argc, char **argv) {
 
   int connection_status = ssl_block_connect(ssl, fd);
   if (connection_status == -1) {
-    printf("ssl error");
+    puts("ssl error");
     return 1;
   }
 

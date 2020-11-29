@@ -141,10 +141,7 @@ static int handle_connection(struct server_state *state) {
   assert(state);
 
   /* accept incoming connection */
-  /* set up SSL connection with client */
-  set_nonblock(state->sockfd);
-  SSL_set_fd(ssl, state->sockfd);
-  connfd = ssl_block_accept(ssl, state->sockfd);
+  connfd = accept(state->sockfd, &addr, &addrlen);
   if (connfd < 0) {
     if (errno == EINTR) return 0;
     perror("error: accepting new connection failed");
@@ -379,6 +376,9 @@ int main(int argc, char **argv) {
   if (create_tables() == 0) {
     return 1;
   }
+
+  ctx = SSL_CTX_new(TLS_server_method());
+  ssl = SSL_new(ctx);
 
   /* wait for connections */
   for (;;) {
