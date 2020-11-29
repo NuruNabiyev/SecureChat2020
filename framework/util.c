@@ -135,5 +135,3 @@ int hash_password(char *orig_pwd, unsigned char *hashed_pwd, const unsigned char
   SHA256_Final(hashed_pwd, &ctx);
   return 0;
 }
-
-

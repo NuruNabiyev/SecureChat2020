@@ -1,6 +1,7 @@
 
 #include "chatdb.h"
 #include "util.h"
+#include "ssl-nonblock.h"
 
 /**
  * Opens db and creates tables if do not exist
@@ -58,7 +59,7 @@ int create_tables() {
  * Adds user into DB
  * @return 1 on success, 0 if error
  */
-int create_user(char *username, char *password, int fd) {
+int create_user(char *username, char *password, int fd, SSL *ssl) {
   db_rc = sqlite3_open(DB_NAME, &db);
 
   db_sql = "SELECT COUNT(*) FROM users WHERE username = ?1";
@@ -90,23 +91,23 @@ int create_user(char *username, char *password, int fd) {
     if (db_rc == SQLITE_DONE) {
       // send to client
       char *register_ok = "registration succeeded\n";
-      send(fd, register_ok, strlen(register_ok), 0);
+      ssl_block_write(ssl, fd, register_ok, strlen(register_ok));
       return 1;
     } else {
       printf("ERROR inserting data: %s\n", sqlite3_errmsg(db));
       char *registration_fail = "error: please try again\n";
-      send(fd, registration_fail, strlen(registration_fail), 0);
+      ssl_block_write(ssl, fd, registration_fail, strlen(registration_fail));
     }
 
   } else {
     // send to client
     char *registration_fail = "error: user already exists\n";
-    send(fd, registration_fail, strlen(registration_fail), 0);
+    ssl_block_write(ssl, fd, registration_fail, strlen(registration_fail));
   }
   return 0;
 }
 
-int check_login(char *username, char *password, int fd) {
+int check_login(char *username, char *password, int fd, SSL *ssl) {
   db_rc = sqlite3_open(DB_NAME, &db);
   db_sql = "SELECT * FROM users WHERE username = ?1";
   sqlite3_prepare_v2(db, db_sql, -1, &db_stmt, NULL);
@@ -127,12 +128,12 @@ int check_login(char *username, char *password, int fd) {
 
   if (password_matches == 1) {
     char *text = "authentication succeeded\n";
-    send(fd, text, strlen(text), 0);
+    ssl_block_write(ssl, fd, text, strlen(text));
     return 1;
   } else {
     // send error to client
     char *login_fail = "error: invalid credentials\n";
-    send(fd, login_fail, strlen(login_fail), 0);
+    ssl_block_write(ssl, fd, login_fail, strlen(login_fail));
   }
   return 0;
 }
@@ -238,7 +239,7 @@ int process_private(char *fullmsg, char *recipient, char *curr_user) {
  * Query all messages and send to that client
  * @return last sent message
  */
-char* send_all_messages(int fd, char *username) {
+char* send_all_messages(int fd, char *username, SSL *ssl) {
   db_rc = sqlite3_open(DB_NAME, &db);
   db_sql = "SELECT message FROM global_chat "
            "where recipient IS NULL or recipient == ?1 or sender == ?1;";
@@ -249,7 +250,7 @@ char* send_all_messages(int fd, char *username) {
   char *last_msg = malloc(300);
   while ((db_rc = sqlite3_step(db_stmt)) == SQLITE_ROW) {
     unsigned const char *curr_msg = sqlite3_column_text(db_stmt, 0);
-    send(fd, curr_msg, strlen(curr_msg), 0);
+    ssl_block_write(ssl, fd, curr_msg, strlen(curr_msg));
     sprintf(last_msg, "%s", curr_msg);
   }
   sqlite3_finalize(db_stmt);

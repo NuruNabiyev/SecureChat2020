@@ -12,6 +12,7 @@
 #include "util.h"
 #include "worker.h"
 #include "chatdb.h"
+#include "ssl-nonblock.h"
 
 struct worker_state {
     struct api_state api;
@@ -33,7 +34,7 @@ static int handle_s2w_notification(struct worker_state *state) {
   if (last_msg == NULL) return 0;
   if (state->last_notified_msg == NULL
       || strcmp(last_msg, state->last_notified_msg) != 0) {
-    send(state->api.fd, last_msg, strlen(last_msg), 0);
+    ssl_block_write(ssl, state->api.fd, last_msg, strlen(last_msg));
     state->last_notified_msg = malloc(strlen(last_msg));
     sprintf(state->last_notified_msg, "%s", last_msg);
   }
@@ -141,7 +142,7 @@ static char *extract_user_from_priv(char *private_msg) {
 static int execute_credentials(int is_register_or_login, struct worker_state *state, char *received) {
   if (state->current_user != NULL) {
     char err[] = "You are already logged in\n";
-    send(state->api.fd, err, strlen(err), 0);
+    ssl_block_write(ssl, state->api.fd, err, strlen(err));
     return 0;
   }
 
@@ -149,15 +150,15 @@ static int execute_credentials(int is_register_or_login, struct worker_state *st
   char *password = extract_password(received); // todo hash and salt this
   int ret = -1;
   if (is_register_or_login == 1) {
-    ret = create_user(username, password, state->api.fd);
+    ret = create_user(username, password, state->api.fd, ssl);
   } else if (is_register_or_login == 0) {
-    ret = check_login(username, password, state->api.fd);
+    ret = check_login(username, password, state->api.fd, ssl);
   }
   if (ret == 1) {
     state->current_user = username;
     set_logged_in(state->current_user);
     // need to initialize last sent message
-    char *last_msg = send_all_messages(state->api.fd, state->current_user);
+    char *last_msg = send_all_messages(state->api.fd, state->current_user, ssl);
     state->last_notified_msg = malloc(strlen(last_msg));
     sprintf(state->last_notified_msg, "%s", last_msg);
   }
@@ -166,11 +167,11 @@ static int execute_credentials(int is_register_or_login, struct worker_state *st
 static int execute_users(struct worker_state *state) {
   if (state->current_user == NULL) {
     char err[] = "You must login first\n";
-    send(state->api.fd, err, strlen(err), 0);
+    ssl_block_write(ssl,state->api.fd, err, strlen(err));
     return 0;
   }
   char *users = retrieve_all_users();
-  send(state->api.fd, users, strlen(users), 0);
+  ssl_block_write(ssl,state->api.fd, users, strlen(users));
   return 1;
 }
 
@@ -180,7 +181,7 @@ static int execute_users(struct worker_state *state) {
 static int execute_private(struct worker_state *state, char *received) {
   if (state->current_user == NULL) {
     char err[] = "You must login first\n";
-    send(state->api.fd, err, strlen(err), 0);
+    ssl_block_write(ssl,state->api.fd, err, strlen(err));
     return 0;
   }
 
@@ -193,11 +194,11 @@ static int execute_private(struct worker_state *state, char *received) {
       notify_workers(state);
     } else {
       char err[] = "Error occurred, please retry\n";
-      send(state->api.fd, err, strlen(err), 0);
+      ssl_block_write(ssl,state->api.fd, err, strlen(err));
     }
   } else {
     char err[] = "Recipient is not found\n";
-    send(state->api.fd, err, strlen(err), 0);
+    ssl_block_write(ssl,state->api.fd, err, strlen(err));
   }
   return 1;
 }
@@ -208,7 +209,7 @@ static int execute_private(struct worker_state *state, char *received) {
 static int execute_public(struct worker_state *state, char *received) {
   if (state->current_user == NULL) {
     char err[] = "You must login first\n";
-    send(state->api.fd, err, strlen(err), 0);
+    ssl_block_write(ssl,state->api.fd, err, strlen(err));
     return 0;
   }
 
@@ -254,7 +255,7 @@ static int handle_client_request(struct worker_state *state) {
   assert(state);
 
   /* wait for incoming request, set eof if there are no more requests */
-  r = api_recv(&state->api, &msg);
+  r = api_recv(&state->api, &msg, ssl);
   if (r < 0) return -1;
   if (r == 0) {
     state->eof = 1;
@@ -331,7 +332,7 @@ static int handle_incoming(struct worker_state *state) {
   /* TODO once you implement encryption you may need to call ssl_has_data
    * here due to buffering (see ssl-nonblock example)
    */
-  if (FD_ISSET(state->api.fd, &readfds)) {
+  if (FD_ISSET(state->api.fd, &readfds) && ssl_has_data(ssl)) {
     if (handle_client_request(state) != 0) success = 0;
   }
   if (FD_ISSET(state->server_fd, &readfds)) {
@@ -391,6 +392,15 @@ __attribute__((noreturn))
 void worker_start(int connfd, int server_fd) {
   struct worker_state state;
   int success = 1;
+
+  ctx = SSL_CTX_new(TLS_server_method());
+  ssl = SSL_new(ctx);
+  int ret = SSL_use_certificate_file(ssl, "/serverkeys/server-ca-cert.pem", SSL_FILETYPE_PEM);
+  if (ret < 1)
+    puts("error: SSL_use_certificate_file");
+  ret =  SSL_use_PrivateKey_file(ssl, "/serverkeys/privkey-server.pem", SSL_FILETYPE_PEM);
+  if (ret < 1)
+    puts("error: SSL_use_PrivateKey_file");
 
   /* initialize worker state */
   if (worker_state_init(&state, connfd, server_fd) != 0) {

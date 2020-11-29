@@ -26,9 +26,9 @@ int db_rc;
 
 int create_tables();
 
-int create_user(char *username, char *password, int fd);
+int create_user(char *username, char *password, int fd, SSL *ssl);
 
-int check_login(char *username, char *password, int fd);
+int check_login(char *username, char *password, int fd, SSL *ssl);
 
 char *retrieve_last(char *username);
 
@@ -36,7 +36,7 @@ int process_global(char *received, char *username);
 
 int process_private(char *fullmsg, char *recipient, char *curr_user);
 
-char *send_all_messages(int fd, char *username);
+char* send_all_messages(int fd, char *username, SSL *ssl);
 
 int set_logged_in(char *current_user);
 

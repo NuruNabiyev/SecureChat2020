@@ -1,10 +1,11 @@
 #ifndef _WORKER_H_
 #define _WORKER_H_
 
+SSL_CTX *ctx;
+SSL *ssl;
+
 __attribute__((noreturn))
 void worker_start(int connfd, int server_fd);
-
-
 
 int worker_check_command(char* message);
 

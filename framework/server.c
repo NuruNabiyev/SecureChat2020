@@ -14,8 +14,12 @@
 #include "util.h"
 #include "worker.h"
 #include "chatdb.h"
+#include "ssl-nonblock.h"
 
 #define MAX_CHILDREN 16
+
+SSL_CTX *ctx;
+SSL *ssl;
 
 struct server_child_state {
   int worker_fd;  /* server <-> worker bidirectional notification channel */
@@ -137,7 +141,10 @@ static int handle_connection(struct server_state *state) {
   assert(state);
 
   /* accept incoming connection */
-  connfd = accept(state->sockfd, &addr, &addrlen);
+  /* set up SSL connection with client */
+  set_nonblock(state->sockfd);
+  SSL_set_fd(ssl, state->sockfd);
+  connfd = ssl_block_accept(ssl, state->sockfd);
   if (connfd < 0) {
     if (errno == EINTR) return 0;
     perror("error: accepting new connection failed");
@@ -383,6 +390,9 @@ int main(int argc, char **argv) {
   /* TODO any additional server cleanup */
   server_state_free(&state);
   close(state.sockfd);
+  /* clean up SSL */
+  SSL_free(ssl);
+  SSL_CTX_free(ctx);
 
   return 0;
 }

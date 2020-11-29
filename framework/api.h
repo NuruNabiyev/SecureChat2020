@@ -1,6 +1,8 @@
 #ifndef _API_H_
 #define _API_H_
 
+#include "ssl-nonblock.h"
+
 struct api_msg {
   /* TODO add information about message */
   char* received;
@@ -12,7 +14,7 @@ struct api_state {
     /* TODO add required fields */
 };
 
-int api_recv(struct api_state *state, struct api_msg *msg);
+int api_recv(struct api_state *state, struct api_msg *msg, SSL *ssl);
 
 void api_recv_free(struct api_msg *msg);
 

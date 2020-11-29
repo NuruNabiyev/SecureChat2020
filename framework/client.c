@@ -5,9 +5,13 @@
 #include <string.h>
 #include <unistd.h>
 
+#include "ssl-nonblock.h"
 #include "api.h"
 #include "ui.h"
 #include "util.h"
+
+SSL_CTX *ctx;
+SSL *ssl;
 
 struct client_state {
     struct api_state api;
@@ -56,7 +60,7 @@ static int client_process_command(struct client_state *state) {
 
   //here the text is a varibale. maybe place it in a struct? 
   if (ui_command_process(&state->ui) == 1) {
-    send(state->api.fd, state->ui.input, strlen(state->ui.input), 0);
+    ssl_block_write(ssl, state->api.fd, state->ui.input, strlen(state->ui.input));
   }
   return 0;
 }
@@ -91,7 +95,7 @@ static int handle_server_request(struct client_state *state) {
   assert(state);
 
   /* wait for incoming request, set eof if there are no more requests */
-  r = api_recv(&state->api, &msg);
+  r = api_recv(&state->api, &msg, ssl);
   if (r < 0) return -1;
   if (r == 0) {
     state->eof = 1;
@@ -146,7 +150,7 @@ static int handle_incoming(struct client_state *state) {
   /* TODO once you implement encryption you may need to call ssl_has_data
    * here due to buffering (see ssl-nonblock example)
    */
-  if (FD_ISSET(state->api.fd, &readfds)) {
+  if (FD_ISSET(state->api.fd, &readfds) && ssl_has_data(ssl)) {
     return handle_server_request(state);
   }
   return 0;
@@ -191,6 +195,9 @@ int main(int argc, char **argv) {
   if (argc != 3) usage();
   if (parse_port(argv[2], &port) != 0) usage();
 
+  ctx = SSL_CTX_new(TLS_client_method());
+  ssl = SSL_new(ctx);
+
   /* preparations */
   client_state_init(&state);
 
@@ -198,8 +205,17 @@ int main(int argc, char **argv) {
   fd = client_connect(&state, argv[1], port);
   if (fd < 0) return 1;
 
+  set_nonblock(fd);
+  SSL_set_fd(ssl, fd);
+
   /* initialize API */
   api_state_init(&state.api, fd);
+
+  int connection_status = ssl_block_connect(ssl, fd);
+  if (connection_status == -1) {
+    printf("ssl error");
+    return 1;
+  }
 
   /* TODO any additional client initialization */
 
@@ -210,6 +226,9 @@ int main(int argc, char **argv) {
   /* TODO any additional client cleanup */
   client_state_free(&state);
   close(fd);
+  /* clean up SSL */
+  SSL_free(ssl);
+  SSL_CTX_free(ctx);
 
   return 0;
 }

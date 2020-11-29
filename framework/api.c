@@ -13,13 +13,13 @@
  * @return        Returns 1 on new message, 0 in case socket was closed,
  *                or -1 in case of error.
  */
-int api_recv(struct api_state *state, struct api_msg *msg) {
+int api_recv(struct api_state *state, struct api_msg *msg, SSL *ssl) {
 
   assert(state);
   assert(msg);
 
   char client_msg[500] = "";
-  int recv_bytes = recv(state->fd, client_msg, 500, 0);
+  int recv_bytes = ssl_block_read(ssl, state->fd, client_msg, 500);
   // substring until received bytes
   char substr[500] = "";
   for (int i = 0; i < recv_bytes; ++i)
