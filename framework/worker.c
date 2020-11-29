@@ -462,7 +462,7 @@ int worker_check_command(char *message) {
   return 0;
 }
 
-int worker_stack_of_commands(char *string) {
+int stack_of_commands(char *string) {
   if (strcmp(string, "/login") == 0) return 1;
   if (strcmp(string, "/register") == 0) return 2;
   if (strcmp(string, "/users") == 0) return 3;
@@ -471,7 +471,7 @@ int worker_stack_of_commands(char *string) {
   return 0;
 }
 
-char **worker_removeSpaces(char *string) {
+char **removeSpaces(char *string) {
   int i = 0;
   int n = strlen(string);
   char **token = malloc(sizeof(char *) * n);
@@ -515,7 +515,7 @@ int worker_checkRegisterCommand(char **string, int i) {
   return 0;
 }
 
-int worker_checkExitCommand(char **string, int i) {
+int checkExitCommand(char **string, int i) {
 
   if (i < 2) {
     printf("The User exited the program!\n");
@@ -524,12 +524,12 @@ int worker_checkExitCommand(char **string, int i) {
   return 0;
 }
 
-void worker_removeNewLine(char *string) {
+void removeNewLine(char *string) {
   if (string[strlen(string) - 1] == '\n')
     string[strlen(string) - 1] = '\0';
 }
 
-int worker_parseMessage(char *string) {
+int parseMessage(char *string) {
   // removeNewLine(string);
 
   if (string[0] != ' ' && string[0] != '\t'
