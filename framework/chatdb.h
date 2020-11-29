@@ -17,6 +17,8 @@
 #include <sys/select.h>
 #include <time.h>
 
+#include "ssl-nonblock.h"
+
 #define DB_NAME "chat.db"
 
 char *db_sql;

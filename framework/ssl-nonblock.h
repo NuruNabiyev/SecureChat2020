@@ -2,6 +2,8 @@
 #define __SSL_NONBLOCK_H__
 
 #include <openssl/ssl.h>
+#include <fcntl.h>
+#include <openssl/err.h>
 
 /* These functions allow SSL to be combined with select:
  * - Set the file descriptor of the socket to non-blocking mode using

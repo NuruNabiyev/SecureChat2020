@@ -1,5 +1,3 @@
-#include <fcntl.h>
-#include <openssl/err.h>
 
 #include "ssl-nonblock.h"
 

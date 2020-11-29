@@ -1,7 +1,6 @@
 
 #include "chatdb.h"
 #include "util.h"
-#include "ssl-nonblock.h"
 
 /**
  * Opens db and creates tables if do not exist
