@@ -1,12 +1,12 @@
 #ifndef _UI_H_
 #define _UI_H_
-#define MAXIUM_INPUT 500
+#define MAXIUM_INPUT 1000
 
 struct ui_state {
   /* TODO add fields to store the command arguments */
   char input[MAXIUM_INPUT];
   int loggedIn;
-
+  char check_eof[10];
 
 };
 
@@ -16,7 +16,7 @@ void ui_state_init(struct ui_state *state);
 /* TODO add UI calls interact with user on stdin/stdout */
 int ui_command_process(struct ui_state *state);
 
-void readLine(char* input);
+void readLine(struct ui_state *state);
 
 
 int check_command(struct ui_state *state);
@@ -45,10 +45,13 @@ int parseMessage(char *string);
 //Modifies a string by removing his end of line character as a message cannot have a end of line
 void removeNewLine(char *string);
 
-//Handles the reading and parsing of the command
-void ui_process_command(struct ui_state *state);
 
 int stack_of_commands(char* string);
+
+
+int verify_username(char* string);
+
+int verify_password(char* string);
 
 
 #endif /* defined(_UI_H_) */

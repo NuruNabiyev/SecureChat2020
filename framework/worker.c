@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <regex.h>
 
 #include <sys/socket.h>
 #include <sys/select.h>
@@ -13,6 +14,9 @@
 #include "worker.h"
 #include "chatdb.h"
 #include "ssl-nonblock.h"
+
+
+int bruteforce_count = 0;
 
 struct worker_state {
     struct api_state api;
@@ -141,7 +145,7 @@ static char *extract_user_from_priv(char *private_msg) {
  */
 static int execute_credentials(int is_register_or_login, struct worker_state *state, char *received) {
   if (state->current_user != NULL) {
-    char err[] = "You are already logged in\n";
+    char err[] = "error: command not currently available\n";
     ssl_block_write(ssl, state->api.fd, err, strlen(err));
     return 0;
   }
@@ -153,8 +157,13 @@ static int execute_credentials(int is_register_or_login, struct worker_state *st
     ret = create_user(username, password, state->api.fd, ssl);
   } else if (is_register_or_login == 0) {
     ret = check_login(username, password, state->api.fd, ssl);
+    if(ret == 0) {
+      bruteforce_check(); 
+      bruteforce_count++;
+    }
   }
   if (ret == 1) {
+    bruteforce_count = 0;
     state->current_user = username;
     set_logged_in(state->current_user);
     // need to initialize last sent message
@@ -166,7 +175,7 @@ static int execute_credentials(int is_register_or_login, struct worker_state *st
 
 static int execute_users(struct worker_state *state) {
   if (state->current_user == NULL) {
-    char err[] = "You must login first\n";
+    char err[] = "error: command not currently available\n";
     ssl_block_write(ssl,state->api.fd, err, strlen(err));
     return 0;
   }
@@ -180,7 +189,7 @@ static int execute_users(struct worker_state *state) {
  */
 static int execute_private(struct worker_state *state, char *received) {
   if (state->current_user == NULL) {
-    char err[] = "You must login first\n";
+    char err[] = "error: command not currently available\n";
     ssl_block_write(ssl,state->api.fd, err, strlen(err));
     return 0;
   }
@@ -227,20 +236,30 @@ static int execute_public(struct worker_state *state, char *received) {
  * @param msg     Message to handle
  */
 static int execute_request(struct worker_state *state, const struct api_msg *msg) {
-  int check_input = 0;
-  check_input = worker_check_command(msg->received);
-  if (check_input == 2) {
-    execute_credentials(1, state, msg->received);
-  } else if (check_input == 1) {
-    execute_credentials(0, state, msg->received);
-  } else if (check_input == 3) {
-    execute_users(state);
-  } else if (msg->received[0] == '@' && check_input == 5) {
-    execute_private(state, msg->received);
-  } else if (check_input == 5) {
-    execute_public(state, msg->received);
+  if(strlen(msg->received) <= 200)
+  {
+    int check_input = 0;
+    check_input = worker_check_command(msg->received);
+    if (check_input == 2) {
+      execute_credentials(1, state, msg->received);
+    } else if (check_input == 1) {
+      execute_credentials(0, state, msg->received);
+    } else if (check_input == 3) {
+      execute_users(state);
+    } else if (msg->received[0] == '@' && check_input == 5) {
+      execute_private(state, msg->received);
+    } else if (check_input == 5) {
+      execute_public(state, msg->received);
+    }else if(check_input == 5){
+      char err[] = "error:Unknown command! \n";
+      send(state->api.fd, err, strlen(err)+1, 0);
+    }
   }
-
+  else
+  {
+    char err[] = "error: A user cannot send more than 200 characters! \n";
+    send(state->api.fd, err, strlen(err)+1, 0);
+  }
   return 0;
 }
 
@@ -354,6 +373,7 @@ static int worker_state_init(struct worker_state *state, int connfd, int server_
   /* initialize */
   memset(state, 0, sizeof(*state));
   state->server_fd = server_fd;
+  bruteforce_count = 0;
 
   /* set up API state */
   api_state_init(&state->api, connfd);
@@ -370,7 +390,7 @@ static int worker_state_init(struct worker_state *state, int connfd, int server_
  */
 static void worker_state_free(struct worker_state *state) {
   logout_user(state->current_user);
-
+  bruteforce_count = 0;
   /* clean up API state */
   api_state_free(&state->api);
 
@@ -429,7 +449,7 @@ void worker_start(int connfd, int server_fd) {
   exit(success ? 0 : 1);
 }
 
-int worker_check_command(char *message) {
+int worker_check_command(char* message) {
 
   char **parsedStrings;
   char *copyStrings = malloc(strlen(message) + 2);
@@ -440,25 +460,36 @@ int worker_check_command(char *message) {
 
 
   if (parsedStrings[0] == NULL || strcmp(message, "\n") == 0) {
-    printf("error:Empty text is not permitted.\n");
     return 0;
   }
 
   switch (stack_of_commands(parsedStrings[0])) {
     case 1:
-      return worker_checkLoginCommand(parsedStrings, arraySize);
+      if(worker_checkLoginCommand(parsedStrings, arraySize) ==1)
+      {
+        char* parsedMessage = malloc(strlen(message) + 1);
+        sprintf(parsedMessage, "%s %s %s",parsedStrings[0],parsedStrings[1],parsedStrings[2]);
+        strcpy(message, parsedMessage);
+        return 1;
+      }
+      break;
     case 2:
-      return worker_checkRegisterCommand(parsedStrings, arraySize);
+      if(worker_checkLoginCommand(parsedStrings, arraySize) ==1)
+      {
+        char* parsedMessage = malloc(strlen(message) + 1);
+        sprintf(parsedMessage, "%s %s %s",parsedStrings[0],parsedStrings[1],parsedStrings[2]);
+        strcpy(message, parsedMessage);
+        return 2;
+      }
+      break;
     case 3:
       return worker_checkUsersCommand(arraySize);
     case 4:
       return checkExitCommand(parsedStrings, arraySize);
     case 5:
-      // if (!state->loggedIn) printf("Error: you are not logged in.\n");
       return parseMessage(message);
       break;
     default:
-      printf("Error: unknown command.\n");
       break;
   }
   free(parsedStrings);
@@ -506,45 +537,126 @@ int worker_checkUsersCommand(int i) {
   return 0;
 }
 
-
 int worker_checkLoginCommand(char **string, int i) {
-  if (i < 4 && i > 2) return 1;
-  else printf("error: Incorrect login command!\n");
-  return 0;
+
+ if (i < 4 && i > 2) 
+  {
+    if(verify_username(string[1]) == 1)
+    {
+      if(verify_password(string[2]) == 1) return 1;
+    }
+  }
+   return 0;
 }
 
 int worker_checkRegisterCommand(char **string, int i) {
-  if (i < 4 && i > 2) return 2;
-  else printf("error: Incorrect register command!\n");
-
+  if (i < 4 && i > 2) 
+  {
+    if(verify_username(string[1]) == 1)
+    {
+      if(verify_password(string[2]) == 1) return 2;
+    }
+  }
   return 0;
 }
 
 int checkExitCommand(char **string, int i) {
-
-  if (i < 2) {
-    printf("The User exited the program!\n");
-    exit(0);
-  }
   return 0;
 }
 
-void removeNewLine(char *string) {
-  if (string[strlen(string) - 1] == '\n')
-    string[strlen(string) - 1] = '\0';
+void  remove_whitespaces(char *string) {
+
+  int i,j,k;
+  char* copystring = NULL;
+  copystring = malloc(strlen(string) +1);
+  
+  i = 0;
+  j = strlen(string)+1;
+  k = 0;
+  if(string[0] == ' ' || string[i] == '\t' )
+  {
+    while(string[i] == ' ' ||  string[i] == '\t')
+    {
+      i++;
+    }
+  }
+  while(string[j] == '\0')
+  {
+    j = j -1;
+  }
+  
+  if(string[j-1] == ' ' || string[j-1] == '\t' )
+  {
+    while(string[j] == ' ' || string[j] == '\t')
+    {
+      j = j - 1;
+    }
+  }
+
+  for(i; i <=j ; i++)
+  {
+    copystring[k] = string[i];
+    k = k + 1; 
+  }
+  copystring[k+1] = '\0';
+  strcpy(string, copystring);
+  free(copystring);
 }
 
 int parseMessage(char *string) {
-  // removeNewLine(string);
-
-  if (string[0] != ' ' && string[0] != '\t'
-      && string[strlen(string) - 1] != ' ' &&
-      string[strlen(string) - 1] != '\t') {
-
-    if (string[0] == '@') { return 5; }
-    else { return 5; }
-  } else {
-    printf("error: Not a good message format!\n");
+  remove_whitespaces(string);
+  if(strlen(string) <= 200)
+  {
+      if (string[0] == '@') { return 5; }
+      else { return 5; }
   }
+  else
+  {
+    printf("error: A message cannot be larger than 200 characters! \n");
+  }
+  
   return 0;
+}
+
+
+int verify_password(char* string)
+{
+  regex_t regex;
+  int first_check = 0;
+  first_check = regcomp(&regex,"[a-zA-Z0-9@$!%*?^&]\\{1,15\\}", 0);
+  if (first_check != 0) 
+  {
+    printf("Regex did not complie correctly \n");
+  }
+  first_check = regexec(&regex, string , 0,NULL,0);
+  
+  if(first_check == 0) return 1;
+  else return 0;
+  
+  return 0;
+}
+
+int verify_username(char* string)
+{
+  regex_t regex;
+  int first_check = 0;
+  first_check = regcomp(&regex,"[a-zA-Z0-9@$!%*?^&]\\{1,32\\}", 0);
+  if (first_check != 0) 
+  {
+    printf("Regex did not complie correctly \n");
+  }
+  first_check = regexec(&regex, string , 0,NULL,0);
+  
+  if(first_check == 0)return 1;
+  else return 0;
+  
+  return 0;
+}
+
+void bruteforce_check()
+{
+  if(bruteforce_count > 10)
+  {
+    sleep(5);
+  }
 }

@@ -62,6 +62,10 @@ static int client_process_command(struct client_state *state) {
   if (ui_command_process(&state->ui) == 1) {
     ssl_block_write(ssl, state->api.fd, state->ui.input, strlen(state->ui.input));
   }
+  if(strcmp(state->ui.check_eof, "secProg") == 0)
+  {
+    state->eof = 1;
+  }
   return 0;
 }
 
