@@ -486,7 +486,7 @@ char **removeSpaces(char *string) {
   return token;
 }
 
-int worker_returnStringArraySize(char **string) {
+int returnStringArraySize(char **string) {
   int i = 0;
   while (string[i] != NULL) {
     i++;
