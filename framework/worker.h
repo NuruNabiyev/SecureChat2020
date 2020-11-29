@@ -34,7 +34,7 @@ int worker_parseMessage(char *string);
 void worker_removeNewLine(char *string);
 
 
-int workerstack_of_commands(char* string);
+int worker_stack_of_commands(char* string);
 
 
 #endif /* !defined(_WORKER_H_) */
