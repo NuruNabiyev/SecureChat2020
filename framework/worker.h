@@ -10,10 +10,10 @@ void worker_start(int connfd, int server_fd);
 int worker_check_command(char* message);
 
 //Removes Whitespaces and returns a array of strings
-char **removeSpaces(char *string);
+char **worker_removeSpaces(char *string);
 
 //Returns the size of an array of strings
-int returnStringArraySize(char **string);
+int worker_returnStringArraySize(char **string);
 
 //Verifies the login command
 int worker_checkLoginCommand(char **string, int i);
@@ -25,16 +25,16 @@ int worker_checkRegisterCommand(char **string, int i);
 int worker_checkUsersCommand(int i);
 
 //Verifies the exit command
-int checkExitCommand(char **string, int in);
+int worker_checkExitCommand(char **string, int in);
 
 //Parses the message send by the user(verifies if it is public and it's format) 
-int parseMessage(char *string);
+int worker_parseMessage(char *string);
 
 //Modifies a string by removing his end of line character as a message cannot have a end of line
-void removeNewLine(char *string);
+void worker_removeNewLine(char *string);
 
 
-int stack_of_commands(char* string);
+int workerstack_of_commands(char* string);
 
 
 #endif /* !defined(_WORKER_H_) */
