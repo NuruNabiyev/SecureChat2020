@@ -5,10 +5,13 @@
 CFLAGS=-g
 LDLIBS=-lsqlite3 -lcrypto -lssl
 
-all: client server
+all: client server ttp
 
 clean:
 	rm -rf server client *.o chat.db clientkeys serverkeys ttp-keys ttp.log
+
+ttp:
+	./ttp.sh create server
 
 ui.o: ui.c ui.h
 
