@@ -64,29 +64,29 @@ int parse_port(const char *str, uint16_t *port_p) {
 */
 char *generate_keys(char *name, int server_or_client) {
 
-	FILE *fp;
-	char *PATH = malloc(128); // Don't forget to free this after using!
-	char cmd[64];
-	
-	if (server_or_client) {
-		snprintf(cmd, 64, "./ttp.sh create %s >/dev/null 2>&1", name);
-		fp = popen(cmd, "r");
-		if (fp == NULL) {
-			return NULL;
-		}
-	} else {
-		snprintf(cmd, 64, "./ttp.sh create server >/dev/null 2>&1");
-		fp = popen(cmd, "r");
-		if (fp == NULL) {
-			return NULL;
-		}
-	}
+  FILE *fp;
+  char *PATH = malloc(128); // todo Don't forget to free this after using!
+  char cmd[64];
 
-	fgets(PATH, sizeof(PATH), fp);
-	if (PATH == NULL) {
-		return NULL;
-	}
-	return PATH;
+  if (server_or_client) {
+    snprintf(cmd, 64, "./ttp.sh create %s >/dev/null 2>&1", name);
+    fp = popen(cmd, "r");
+    if (fp == NULL) {
+      return NULL;
+    }
+  } else {
+    snprintf(cmd, 64, "./ttp.sh create server >/dev/null 2>&1");
+    fp = popen(cmd, "r");
+    if (fp == NULL) {
+      return NULL;
+    }
+  }
+
+  fgets(PATH, sizeof(PATH), fp);
+  if (PATH == NULL) {
+    return NULL;
+  }
+  return PATH;
 }
 
 /*
@@ -95,36 +95,36 @@ char *generate_keys(char *name, int server_or_client) {
 */
 EVP_PKEY *ttp_get_pubkey(char *name, int server_or_client) {
 
-	FILE *fp;
-	char *CERT = malloc(2048);	// Don't forget to free this after using public key!
-	char cmd[64];
-	time_t *ptime;
+  FILE *fp;
+  char *CERT = malloc(2048);  // todo Don't forget to free this after using public key!
+  char cmd[64];
+  time_t *ptime;
 
-	if (server_or_client) {
-		snprintf(cmd, 64, "./ttp.sh verify %s", name);
-	} else {
-		snprintf(cmd, 64, "./ttp.sh verify server");
-	}
-	
-	fp = popen(cmd, "r");
-	if (fp == NULL) {
-		return NULL;
-	}
+  if (server_or_client) {
+    snprintf(cmd, 64, "./ttp.sh verify %s", name);
+  } else {
+    snprintf(cmd, 64, "./ttp.sh verify server");
+  }
 
-	X509 *cert = PEM_read_X509(fp, NULL, NULL, NULL);
-	if (!cert) {
-		return NULL;
-	}
+  fp = popen(cmd, "r");
+  if (fp == NULL) {
+    return NULL;
+  }
 
-	int i = X509_cmp_time(X509_get_notBefore(cert), ptime);
-	int j = X509_cmp_time(X509_get_notAfter(cert), ptime);
-	if (i != 1 || j != 1) {
-		return NULL;
-	}
-	
-	EVP_PKEY *pubkey = X509_get_pubkey(cert); 
-	
-	return pubkey;
+  X509 *cert = PEM_read_X509(fp, NULL, NULL, NULL);
+  if (!cert) {
+    return NULL;
+  }
+
+  int i = X509_cmp_time(X509_get_notBefore(cert), ptime);
+  int j = X509_cmp_time(X509_get_notAfter(cert), ptime);
+  if (i != 1 || j != 1) {
+    return NULL;
+  }
+
+  EVP_PKEY *pubkey = X509_get_pubkey(cert);
+
+  return pubkey;
 }
 
 int hash_password(char *orig_pwd, unsigned char *hashed_pwd, const unsigned char *dest_salt) {
