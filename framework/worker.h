@@ -32,8 +32,12 @@ int parseMessage(char *string);
 //Modifies a string by removing his end of line character as a message cannot have a end of line
 void removeNewLine(char *string);
 
-
 int stack_of_commands(char* string);
+
+int verify_password(char* string);
+
+int verify_username(char* string);
+
 void bruteforce_check();
 
 #endif /* !defined(_WORKER_H_) */

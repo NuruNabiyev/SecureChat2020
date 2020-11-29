@@ -1,0 +1,2 @@
+free(): invalid size
+warning: child killed by signal 6

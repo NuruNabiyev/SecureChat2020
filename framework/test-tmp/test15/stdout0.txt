@@ -1,5 +1,2 @@
-username erik.
-password hunter2.
 username sam.
 password hereforfun.
-ERROR updating data: disk I/O error

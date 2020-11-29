@@ -1,4 +1,4 @@
 authentication succeeded
-2020-11-28 22:21:24 erik: pubmsg1
-2020-11-28 22:21:37 erik: pubmsg2
-2020-11-28 22:21:37 erik: pubmsg2
+2020-11-29 22:10:38 erik: pubmsg1
+2020-11-29 22:10:51 erik: pubmsg2
+2020-11-29 22:10:51 erik: pubmsg2

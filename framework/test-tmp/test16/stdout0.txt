@@ -1,8 +1,8 @@
-username user2.
-password iloveyou.
+username erik.
+password hunter2.
 username sam.
 password hereforfun.
 ERROR updating data: disk I/O error
-username erik.
-password hunter2.
+username user2.
+password iloveyou.
 ERROR updating data: disk I/O error
