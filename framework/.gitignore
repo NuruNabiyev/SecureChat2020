@@ -7,7 +7,7 @@
 /ui
 /util
 /worker
-/clientkeys
-/serverkeys
-/ttp-keys
-ttp.log
+#/clientkeys
+#/serverkeys
+#/ttp-keys
+#ttp.log
