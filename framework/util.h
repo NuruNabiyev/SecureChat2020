@@ -16,6 +16,10 @@ char *generate_keys(char *name, int server_or_client);
 
 EVP_PKEY *ttp_get_pubkey(char *name, int server_or_client);
 
+EVP_PKEY *get_my_private_key();
+char* encrypt(char* msg, EVP_PKEY * pubkey);
+char* decrypt(char* msg, EVP_PKEY * privkey);
+
 int hash_password(char *orig_pwd, unsigned char *hashed_pwd, const unsigned char *dest_salt);
 
 long long current_timestamp();
