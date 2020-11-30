@@ -5,7 +5,7 @@
 CFLAGS=-g -fno-stack-protector -z execstack
 LDLIBS=-lsqlite3 -lcrypto -lssl -lcrypto
 
-all: #ttp client.c server.c
+all: ttp client.c server.c
 	gcc -o client client.c ssl-nonblock.c api.c ui.c util.c $(LDLIBS) $(CFLAGS)
 	gcc -o server server.c worker.c ssl-nonblock.c api.c util.c chatdb.c $(LDLIBS) $(CFLAGS)
 

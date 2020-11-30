@@ -16,11 +16,17 @@ char *extract_username(char *payload);
 
 char *extract_password(char *payload);
 
+char *extract_user_from_priv(char *private_msg);
+
+char *extract_message_from_priv(char *private_msg);
+
+char *extract_cyphertext(char *private_msg, char *myusername);
+
 char *generate_keys(char *name, int server_or_client);
 
 EVP_PKEY *ttp_get_pubkey(char *name, int server_or_client);
 
-EVP_PKEY *get_my_private_key();
+EVP_PKEY *get_my_private_key(char *username);
 char* encrypt(char* msg, EVP_PKEY * pubkey);
 char* decrypt(char* msg, EVP_PKEY * privkey);
 

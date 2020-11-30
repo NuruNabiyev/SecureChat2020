@@ -19,6 +19,7 @@ struct client_state {
     struct ui_state ui;
     char *my_username; // used to get my private key. Do not use to get other users' private keys
     char *last_sent_message;
+    EVP_PKEY *my_priv_key;
 };
 
 /**
@@ -52,21 +53,73 @@ static int client_connect(struct client_state *state,
     return -1;
   }
   return fd;
-}  
+}
+
+/**
+ * Encrypts message before sending
+ * @return -1 in case of error
+ */
+static int send_private_msg(struct client_state *state) {
+  char *other_user = extract_user_from_priv(state->ui.input);
+  char *message = extract_message_from_priv(state->ui.input);
+  EVP_PKEY *other_pub_key = ttp_get_pubkey(other_user, 1);
+  if (other_pub_key == NULL) {
+    printf("Could not get public key of %s, user might not be registered.\n", other_user);
+    return -1;
+  }
+  char *cypher_msg = encrypt(message, other_pub_key);
+
+  int size = strlen(other_user) + strlen(cypher_msg) + 3;
+  unsigned char *send_msg = malloc(size);
+  snprintf(send_msg, size,"@%s %s", other_user, cypher_msg);
+  ssl_block_write(ssl, state->api.fd, send_msg, strlen(send_msg));
+}
 
 static int client_process_command(struct client_state *state) {
 
   assert(state);
 
   if (ui_command_process(&state->ui) == 1) {
-    ssl_block_write(ssl, state->api.fd, state->ui.input, strlen(state->ui.input));
-    sprintf(state->last_sent_message, "%s", state->ui.input);
+    if (state->ui.input[0] == '@') {
+      send_private_msg(state);
+    } else {
+      ssl_block_write(ssl, state->api.fd, state->ui.input, strlen(state->ui.input));
+      sprintf(state->last_sent_message, "%s", state->ui.input);
+    }
   }
-  if(strcmp(state->ui.check_eof, "secProg") == 0)
-  {
+  if (strcmp(state->ui.check_eof, "secProg") == 0) {
     state->eof = 1;
   }
   return 0;
+}
+
+/**
+ * @ return 1 is this is private message, -1 otherwise
+ */
+static int is_private(struct client_state *state, char *msg) {
+  if (strlen(msg) < (27 + strlen(state->my_username))) {
+    printf("len wrong\n");
+    return -1;
+  }
+  int maxsize = strlen(state->my_username) + 5;
+  char *pattern = malloc(maxsize);
+  snprintf(pattern, maxsize, ": @%s ", state->my_username);
+
+  if (strstr(msg, pattern)) {
+    return 1;
+  }
+  return -1;
+}
+
+static void decrypt_private(struct client_state *state, char *msg) {
+  EVP_PKEY *privkey = get_my_private_key(state->my_username);
+  if (privkey == NULL) {
+    printf("Can't get your private key!\n");
+    return;
+  }
+  char *encrypted = extract_cyphertext(msg, state->my_username);
+  char *decrypted = decrypt(encrypted, privkey);
+  printf("Decrypted %s.\n", decrypted);
 }
 
 /**
@@ -78,15 +131,28 @@ static int execute_request(struct client_state *state, const struct api_msg *msg
   if (strcmp(msg->received, "registration succeeded\n") == 0) {
     state->ui.loggedIn = 1;
     state->my_username = extract_username(state->last_sent_message);
-    // todo get my private key path
+    generate_keys(state->my_username, 1);
+    state->my_priv_key = get_my_private_key(state->my_username);
+    if (state->my_priv_key == NULL) {
+      printf("Error: no private key found!\n");
+      return 1;
+    }
     printf("registration succeeded\n");
   } else if (strcmp(msg->received, "authentication succeeded\n") == 0) {
     state->ui.loggedIn = 1;
     state->my_username = extract_username(state->last_sent_message);
-    // todo get my private key path
+    state->my_priv_key = get_my_private_key(state->my_username);
+    if (state->my_priv_key == NULL) {
+      printf("Error: no private key found!\n");
+      return 1;
+    }
     printf("authentication succeeded\n");
   } else {
-    printf("%s", msg->received);
+    if (is_private(state, msg->received) == 1) {
+      decrypt_private(state, msg->received);
+    } else {
+      printf("%s", msg->received);
+    }
   }
   return 0;
 }

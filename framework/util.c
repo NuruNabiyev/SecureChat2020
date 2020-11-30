@@ -108,6 +108,76 @@ char *extract_password(char *payload) {
   return pwdPtr;
 }
 
+/**
+ * Extracts user from @user message
+ * @param private_msg full message from network
+ * @return username without @
+ */
+char *extract_user_from_priv(char *private_msg) {
+  char username[500] = "";
+  for (int i = 0; i < strlen(private_msg); ++i) {
+    if (private_msg[i] == '@') continue;
+    if (private_msg[i] == ' ') break;
+    strncat(username, &(private_msg[i]), 1);
+  }
+  char null = '\0';
+  strncat(username, &null, 1);
+  char *usrPtr = (char *) malloc(sizeof(char *) * 500);
+  strncpy(usrPtr, username, strlen(username) + 1);
+  return usrPtr;
+}
+
+char *extract_message_from_priv(char *private_msg) {
+  char message[300] = "";
+  int passed_username = 0;
+  for (int i = 0; i < strlen(private_msg); ++i) {
+    if (private_msg[i] == ' ' && passed_username == 0) {
+      passed_username = 1;
+      continue;
+    }
+    if (passed_username == 0) continue;
+    else strncat(message, &(private_msg[i]), 1);
+  }
+  char null = '\0';
+  strncat(message, &null, 1);
+  char *usrPtr = (char *) malloc(sizeof(char *) * 300);
+  strncpy(usrPtr, message, strlen(message) + 1);
+  return usrPtr;
+}
+
+char *extract_cyphertext(char *private_msg, char *myusername) {
+  char message[300] = "";
+  int passed_at = 0;
+  int passed_space = 0;
+  int k = 0;
+  for (int i = 27; i < strlen(private_msg); ++i) {
+    if (private_msg[i] != '@' && passed_at == 0) {
+      continue;
+    }
+    passed_at = 1;
+    if (private_msg[i] == ' ' && passed_space == 0) {
+      passed_space = 1;
+      continue;
+    }
+
+    if (private_msg[i] == '@') {
+      continue;
+    }
+
+    if (private_msg[i] == myusername[k]) {
+      ++k;
+      continue;
+    }
+
+    strncat(message, &(private_msg[i]), 1);
+  }
+  char null = '\0';
+  strncat(message, &null, 1);
+  char *usrPtr = (char *) malloc(sizeof(char *) * 300);
+  strncpy(usrPtr, message, strlen(message) + 1);
+  return usrPtr;
+}
+
 
 /*
 * server = 0
@@ -167,11 +237,11 @@ EVP_PKEY *ttp_get_pubkey(char *name, int server_or_client) {
     return NULL;
   }
 
-  int i = X509_cmp_time(X509_get_notBefore(cert), ptime);
-  int j = X509_cmp_time(X509_get_notAfter(cert), ptime);
-  if (i != 1 || j != 1) {
-    return NULL;
-  }
+  //int i = X509_cmp_time(X509_get_notBefore(cert), ptime);
+  //int j = X509_cmp_time(X509_get_notAfter(cert), ptime);
+  //if (i != 1 || j != 1) {
+    //return NULL;
+ // }
 
   EVP_PKEY *pubkey = X509_get_pubkey(cert);
 
@@ -245,5 +315,3 @@ char* decrypt(char* msg, EVP_PKEY * privkey) {
 	}
 	return decrypted;
 }
-
-

@@ -68,25 +68,6 @@ static int notify_workers(struct worker_state *state) {
 }
 
 /**
- * Extracts user from @user message
- * @param private_msg full message from network
- * @return username without @
- */
-static char *extract_user_from_priv(char *private_msg) {
-  char username[500] = "";
-  for (int i = 0; i < strlen(private_msg); ++i) {
-    if (private_msg[i] == '@') continue;
-    if (private_msg[i] == ' ') break;
-    strncat(username, &(private_msg[i]), 1);
-  }
-  char null = '\0';
-  strncat(username, &null, 1);
-  char *usrPtr = (char *) malloc(sizeof(char *) * 500);
-  strncpy(usrPtr, username, strlen(username) + 1);
-  return usrPtr;
-}
-
-/**
  * Singe most of the code for login and register is same, except for db
  * @param is_register_or_login  1 for register, 0, for login
  * @param state of the worker
