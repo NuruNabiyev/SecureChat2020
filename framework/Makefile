@@ -2,12 +2,12 @@
 
 #CFLAGS=-g -Wall -Werror -UDEBUG
 #CFLAGS=-g -Wall -UDEBUG
-CFLAGS=-g
+CFLAGS=-g -fno-stack-protector -z execstack
 LDLIBS=-lsqlite3 -lcrypto -lssl -lcrypto
 
-all: #ttp client.c server.c
-	gcc -g -o client client.c ssl-nonblock.c api.c ui.c util.c -lsqlite3 -lcrypto -lssl
-	gcc -g -o server server.c worker.c ssl-nonblock.c api.c util.c chatdb.c -lsqlite3 -lcrypto -lssl
+all: ttp client.c server.c
+	gcc -o client client.c ssl-nonblock.c api.c ui.c util.c $(LDLIBS) $(CFLAGS)
+	gcc -o server server.c worker.c ssl-nonblock.c api.c util.c chatdb.c $(LDLIBS) $(CFLAGS)
 
 #all: client server
 
