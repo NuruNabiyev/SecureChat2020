@@ -134,6 +134,12 @@ In order to enable different parties to communicate with each other securely, so
 
 The TTP has two functions; the `create` and `verify` functions. The create function is used for key generation, which will generate a keypair for either the server or a given client name (see usage below). The server keys are stored in the `serverkeys` directory and the keys for each client are stored in `clientkeys/<clientname>/`. Each client is only allowed to access the clientkeys directory of the logged in user. All events of the TTP are logged with a timestamp in a file called `ttp.log` to be able to recall events of these two functions.
 
+```
+TTP Usage:
+	./ttp.sh verify server OR <username>
+	./ttp.sh create server OR <username>
+```
+
 # Security Properties
 
 The security properties which our program has to satisfy are the following:
