@@ -4,6 +4,8 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <regex.h>
+#include <ctype.h>
+
 
 #define MAX_INPUT 1000
 
@@ -75,8 +77,6 @@ int check_command(struct ui_state *state) {
     }
 
     int arraySize = returnStringArraySize(parsedString);
-    char message[300] = "asd";
-
     for(int i=0; i<= arraySize-1;i++)
     {
       count_characters = count_characters + strlen(parsedString[i]);
@@ -101,44 +101,14 @@ int check_command(struct ui_state *state) {
         {
           printf("error: command not currently available\n");
           return 0;
-        }else if (state->loggedIn == 1) 
-        {
-          char formated_message[310] = "ad";
-          char full_message[310] = "ad";
-          strcpy(full_message, parsedString[0]);
-          int i = 1;
-          if(arraySize > 1)
-          {
-            while(i < arraySize)
-            {
-              sprintf(formated_message, " %s",parsedString[i]);
-              strcat(full_message,formated_message);
-              i++;
-            }
-            // printf("%s \n",full_message);
-          }
-          else
-          {
-            if(parseMessage(full_message) == 1)
-            {
-              return 1;
-            }
-          }
-          
-           if(parseMessage(full_message) == 1)
-           {
-             strcpy(state->input, full_message);
-             return 1;
-           }
-           else return 0;
-           
-        }
+        }else if (state->loggedIn == 1) return parseMessage(state->input);
         else 
         {
           state->loggedIn = 0;
           printf("error: command not currently available\n");
           return 0;
         }
+        
         break;
       default:
         printf("error: unknown command %s\n",parsedString[0]);
@@ -232,7 +202,7 @@ int checkRegisterCommand(char **string, int i, int loggedIn) {
     if(verify_username(string[1]) == 1)
     {
       if(verify_password(string[2]) == 1) return 1;
-      else printf("error: Please insert a password between 8 to 15 alphanumeric & special characters!\n");
+      else printf("error: Please insert a password between 8 to 15 alphanumeric & allowed special characters!\n");
     }
     else printf("error: Please insert a username with max 32 alphanumeric and allowed special characters!\n");
   }
@@ -256,17 +226,98 @@ int checkExitCommand(char **string, int i, int loggedin) {
 }
 
 
+void  remove_whitespaces(char *string) {
+
+  int i,j,k;
+  char* copystring = NULL;
+  copystring = malloc(strlen(string) +1);
+  
+  i = 0;
+  j = strlen(string)+1;
+  k = 0;
+  if(string[0] == ' ' || string[i] == '\t' )
+  {
+    while(string[i] == ' ' ||  string[i] == '\t')
+    {
+      i++;
+    }
+  }
+  while(string[j] == '\0')
+  {
+    j = j -1;
+  }
+  
+  if(string[j-1] == ' ' || string[j-1] == '\t' )
+  {
+    while(string[j] == ' ' || string[j] == '\t')
+    {
+      j = j - 1;
+    }
+  }
+
+  for(i; i <=j ; i++)
+  {
+    copystring[k] = string[i];
+    k = k + 1; 
+  }
+  copystring[k+1] = '\0';
+  strcpy(string, copystring);
+  free(copystring);
+}
+
 int parseMessage(char *string) {
+   remove_whitespaces(string);
   if(verify_message(string) == 1)
   {
-      return 1;
+      if (string[0] == '@') 
+      {
+        remove_whitespaces_private(string);
+         return 1; 
+      }
+      else { return 1; }
   }
   else
   {
-    printf("error: Non-Ascii characters are not accepted! \n");
+    printf("error: Please insert alphanumeric and allowed special characters only! \n");
   }
   
   return 0;
+}
+
+void remove_whitespaces_private(char *string) {
+
+  int i,j,k;
+  char* copystring = NULL;
+  string[strlen(string)+1] = '\0';
+  copystring = malloc(strlen(string) +1);
+  
+  i = 0;
+  k = 0;
+
+  while(string[i] != ' ' && string[i] != '\t')
+  {
+    copystring[i] = string[i];
+    i++;
+  }
+  copystring[i] = string[i];
+  k = i;
+  i++;
+  while(string[i] == ' ' || string[i] == '\t')
+  {
+    i++;
+  }
+
+  while (string[i] != '\0')
+  {
+    k++;
+    copystring[k] = string[i];
+    i++;
+  }
+
+  copystring[k+1] = '\0';
+  
+  strcpy(string, copystring);
+  free(copystring);
 }
 
 
@@ -306,9 +357,10 @@ int verify_username(char* string)
 
 int verify_message(char* string)
 {
+  
   regex_t regex;
   int first_check = 0;
-  first_check = regcomp(&regex,"[a-zA-Z]", 0);
+  first_check = regcomp(&regex,"[a-zA-Z0-9@$!%*?^&]", 0);
   if (first_check != 0) 
   {
     printf("Regex did not complie correctly \n");

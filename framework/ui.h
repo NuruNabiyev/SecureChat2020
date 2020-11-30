@@ -45,13 +45,15 @@ int parseMessage(char *string);
 //Modifies a string by removing his end of line character as a message cannot have a end of line
 void removeNewLine(char *string);
 
-
+void remove_whitespaces_private(char *string);
 int stack_of_commands(char* string);
 
 
 int verify_username(char* string);
 
 int verify_password(char* string);
+
+int verify_message(char* string);
 
 
 #endif /* defined(_UI_H_) */

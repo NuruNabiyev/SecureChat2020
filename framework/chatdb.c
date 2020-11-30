@@ -175,10 +175,10 @@ char *retrieve_last(char *username) {
  * @return -1 if failed, 1 if all ok and proceed to notify workers
  */
 int process_global(char *received, char *username) {
-  char *curr_time = NULL;
-  char *main_msg = NULL;
-  curr_time = get_current_time();
-  main_msg = (char *) malloc(strlen(received) + strlen(curr_time) + strlen(username) + 3);
+  char curr_time[100] = " ";
+  char main_msg[500] = " ";
+  strcpy(curr_time,get_current_time());
+  // main_msg = (char *) malloc(strlen(received) + strlen(curr_time) + strlen(username) + 3);
   sprintf(main_msg, "%s %s: %s\n", curr_time, username, received);
 
   db_rc = sqlite3_open(DB_NAME, &db);
@@ -197,7 +197,7 @@ int process_global(char *received, char *username) {
   sqlite3_finalize(db_stmt);
 
   if (db_rc == SQLITE_DONE) {
-    free(main_msg);
+    // free(main_msg);
     return 1;
   } else {
     printf("ERROR in adding message to table: %s\n", sqlite3_errmsg(db));
@@ -212,9 +212,9 @@ int process_private(char *fullmsg, char *recipient, char *curr_user) {
     printf("Same recipient and sender\n");
     return -1;
   }
-
-  char *curr_time = get_current_time();
-  char *main_msg = (char *) malloc(500);
+  char curr_time[100];
+  char main_msg[500];
+  strcpy(curr_time, get_current_time());
   sprintf(main_msg, "%s %s: %s\n", curr_time, curr_user, fullmsg);
 
   db_rc = sqlite3_open(DB_NAME, &db);
@@ -234,7 +234,6 @@ int process_private(char *fullmsg, char *recipient, char *curr_user) {
 
   // send to recipient and current user
   if (db_rc == SQLITE_DONE) {
-    free(main_msg);
     return 1;
   } else {
     printf("ERROR in adding message to table: %s\n", sqlite3_errmsg(db));
