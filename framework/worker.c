@@ -70,56 +70,6 @@ static int notify_workers(struct worker_state *state) {
 }
 
 /**
- * Extracts username from /login and /register commands
- * @param payload full login or register message from client
- * @return username
- */
-static char *extract_username(char *payload) {
-  int first_space_found = 0;
-  char username[500] = "";
-  for (int i = 0; i < strlen(payload); ++i) {
-    if (first_space_found == 1) {
-      strncat(username, &(payload[i]), 1);
-      if (payload[i + 1] == ' ') {
-        char null = '\0';
-        strncat(username, &null, 1);
-        break;
-      }
-    }
-
-    if (payload[i] == ' ') {
-      if (first_space_found == 0) {
-        first_space_found = 1;
-      }
-    }
-  }
-
-  char *usrPtr = (char *) malloc(sizeof(char *) * 500);
-  strncpy(usrPtr, username, strlen(username) + 1);
-  return usrPtr;
-}
-
-static char *extract_password(char *payload) {
-  int spaces_found = 0;
-  char password[500] = "";
-  for (int i = 0; i < strlen(payload); ++i) { // without newline
-    if (spaces_found == 2) {
-      strncat(password, &(payload[i]), 1);
-    }
-
-    if (payload[i] == ' ') {
-      ++spaces_found;
-    }
-  }
-  char null = '\0';
-  strncat(password, &null, 1);
-
-  char *pwdPtr = (char *) malloc(sizeof(char *) * 500);
-  strncpy(pwdPtr, password, strlen(password) + 1);
-  return pwdPtr;
-}
-
-/**
  * Extracts user from @user message
  * @param private_msg full message from network
  * @return username without @

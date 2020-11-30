@@ -17,6 +17,8 @@ struct client_state {
     struct api_state api;
     int eof;
     struct ui_state ui;
+    char *my_username; // used to get my private key. Do not use to get other users' private keys
+    char *last_sent_message;
 };
 
 /**
@@ -61,6 +63,7 @@ static int client_process_command(struct client_state *state) {
   //here the text is a varibale. maybe place it in a struct? 
   if (ui_command_process(&state->ui) == 1) {
     ssl_block_write(ssl, state->api.fd, state->ui.input, strlen(state->ui.input));
+    sprintf(state->last_sent_message, "%s", state->ui.input);
   }
   if(strcmp(state->ui.check_eof, "secProg") == 0)
   {
@@ -77,9 +80,13 @@ static int client_process_command(struct client_state *state) {
 static int execute_request(struct client_state *state, const struct api_msg *msg) {
   if (strcmp(msg->received, "registration succeeded\n") == 0) {
     state->ui.loggedIn = 1;
+    state->my_username = extract_username(state->last_sent_message);
+    // todo get my private key path
     printf("registration succeeded\n");
   } else if (strcmp(msg->received, "authentication succeeded\n") == 0) {
     state->ui.loggedIn = 1;
+    state->my_username = extract_username(state->last_sent_message);
+    // todo get my private key path
     printf("authentication succeeded\n");
   } else {
     // process any message
@@ -167,8 +174,7 @@ static int client_state_init(struct client_state *state) {
   /* initialize UI */
   ui_state_init(&state->ui);
 
-  /* TODO any additional client state initialization */
-
+  state->last_sent_message = malloc(1000);
   return 0;
 }
 

@@ -12,6 +12,10 @@ int max(int x, int y);
 
 int parse_port(const char *str, uint16_t *port_p);
 
+char *extract_username(char *payload);
+
+char *extract_password(char *payload);
+
 char *generate_keys(char *name, int server_or_client);
 
 EVP_PKEY *ttp_get_pubkey(char *name, int server_or_client);
