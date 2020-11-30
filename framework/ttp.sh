@@ -62,18 +62,18 @@ function createKeys() {
 				 -out ./serverkeys/pubkey-server.pem >/dev/null
 				 echo "$(pwd)/serverkeys"
 		else
-			openssl genrsa -out ./clientkeys/"$1"/privkey-client"$1".pem >/dev/null
-			openssl req -new -key ./clientkeys/"$1"/privkey-client"$1".pem \
-				 -out ./ttp-keys/client"$1"-csr.pem \
+			openssl genrsa -out ./clientkeys/"$1"/privkey-client.pem >/dev/null
+			openssl req -new -key ./clientkeys/"$1"/privkey-client.pem \
+				 -out ./ttp-keys/client-csr.pem \
 				 -nodes \
 				 -subj "/CN=client\.$1-example\.com/" >/dev/null
 			openssl x509 -req -CA ./ttp-keys/ca-cert.pem \
 				 -CAkey ./ttp-keys/ca-key.pem -CAcreateserial \
-				 -in ./ttp-keys/client"$1"-csr.pem \
-				 -out ./clientkeys/"$1"/client"$1"-ca-cert.pem >/dev/null
+				 -in ./ttp-keys/client-csr.pem \
+				 -out ./clientkeys/"$1"/client-ca-cert.pem >/dev/null
 			openssl rsa -pubout \
-				 -in ./clientkeys/"$1"/privkey-client"$1".pem \
-				 -out ./clientkeys/"$1"/pubkey-client"$1".pem >/dev/null
+				 -in ./clientkeys/"$1"/privkey-client.pem \
+				 -out ./clientkeys/"$1"/pubkey-client.pem >/dev/null
 
 				 echo "$(pwd)/clientkeys/$1"
 		fi
@@ -96,8 +96,8 @@ function verifyKeys() {
 		cat ./serverkeys/server-ca-cert.pem
 		#openssl x509 -in ./serverkeys/server-ca-cert.pem -text -noout
 		return 
-	else [ -e ./clientkeys/"$2"/pubkey-client"$2".pem ]
-		cat ./clientkeys/"$2"/client"$2"-ca-cert.pem
+	else [ -e ./clientkeys/"$2"/pubkey-client.pem ]
+		cat ./clientkeys/"$2"/client-ca-cert.pem
 		#openssl x509 -in ./clientkeys/$2/client$2-ca-cert.pem -text -noout
 		return
 	fi
