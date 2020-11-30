@@ -50,4 +50,6 @@ char *get_current_time(void);
 
 int user_exists(char *username);
 
+int user_logged_in(char *username);
+
 #endif //SECURECHAT2020_CHATDB_H

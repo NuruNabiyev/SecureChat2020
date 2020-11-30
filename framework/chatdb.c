@@ -108,6 +108,14 @@ int create_user(char *username, char *password, int fd, SSL *ssl) {
 
 int check_login(char *username, char *password, int fd, SSL *ssl) {
   db_rc = sqlite3_open(DB_NAME, &db);
+
+  int logged_in = user_logged_in(username);
+  if (logged_in) {
+    char *login_fail = "error: user already logged in\n";
+    ssl_block_write(ssl, fd, login_fail, strlen(login_fail));
+    return 0;
+  }
+
   db_sql = "SELECT * FROM users WHERE username = ?1";
   sqlite3_prepare_v2(db, db_sql, -1, &db_stmt, NULL);
   sqlite3_bind_text(db_stmt, 1, username, -1, SQLITE_STATIC);
@@ -337,6 +345,20 @@ char *get_current_time(void) {
  */
 int user_exists(char *username) {
   db_sql = "SELECT COUNT(*) FROM users WHERE username = ?1";
+  sqlite3_prepare_v2(db, db_sql, -1, &db_stmt, NULL);
+  sqlite3_bind_text(db_stmt, 1, username, -1, SQLITE_STATIC);
+
+  int user_online = 0;
+  while ((db_rc = sqlite3_step(db_stmt)) == SQLITE_ROW) {
+    user_online = sqlite3_column_int(db_stmt, 0);
+  }
+  sqlite3_finalize(db_stmt);
+
+  return user_online;
+}
+
+int user_logged_in(char *username) {
+  db_sql = "SELECT COUNT(*) FROM users WHERE username = ?1 and is_logged_in = 1";
   sqlite3_prepare_v2(db, db_sql, -1, &db_stmt, NULL);
   sqlite3_bind_text(db_stmt, 1, username, -1, SQLITE_STATIC);
 
