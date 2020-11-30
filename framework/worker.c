@@ -624,7 +624,7 @@ int verify_password(char* string)
   }
   first_check = regexec(&regex, string , 0,NULL,0);
   
-  if(first_check == 0) return 1;
+  if(first_check == 0 && strlen(string) < 15) return 1;
   else return 0;
   
   return 0;
@@ -641,7 +641,7 @@ int verify_username(char* string)
   }
   first_check = regexec(&regex, string , 0,NULL,0);
   
-  if(first_check == 0)return 1;
+  if(first_check == 0 && strlen(string) < 33) return 1;
   else return 0;
   
   return 0;

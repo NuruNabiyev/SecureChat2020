@@ -182,7 +182,7 @@ int checkLoginCommand(char **string, int i, int loggedIn) {
     if(verify_username(string[1]) == 1)
     {
       if(verify_password(string[2]) == 1) return 1;
-      else printf("error: Please insert a password between 8 to 15 alphanumeric & allowed special characters!\n");
+      else printf("error: Please insert a password between 1 to 15 alphanumeric & allowed special characters!\n");
     }
     else printf("error: Please insert a username with max 32 alphanumeric and allowed special characters!\n");
   }
@@ -201,7 +201,7 @@ int checkRegisterCommand(char **string, int i, int loggedIn) {
     if(verify_username(string[1]) == 1)
     {
       if(verify_password(string[2]) == 1) return 1;
-      else printf("error: Please insert a password between 8 to 15 alphanumeric & allowed special characters!\n");
+      else printf("error: Please insert a password between 1 to 15 alphanumeric & allowed special characters!\n");
     }
     else printf("error: Please insert a username with max 32 alphanumeric and allowed special characters!\n");
   }
