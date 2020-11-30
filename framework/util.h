@@ -4,6 +4,7 @@
 #include <netinet/in.h>
 #include <openssl/sha.h>
 #include <openssl/rand.h>
+#include <sys/time.h>
 
 int lookup_host_ipv4(const char *hostname, struct in_addr *addr);
 
@@ -16,5 +17,7 @@ char *generate_keys(char *name, int server_or_client);
 EVP_PKEY *ttp_get_pubkey(char *name, int server_or_client);
 
 int hash_password(char *orig_pwd, unsigned char *hashed_pwd, const unsigned char *dest_salt);
+
+long long current_timestamp();
 
 #endif /* defined(_UTIL_H_) */

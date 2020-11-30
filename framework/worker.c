@@ -18,6 +18,7 @@
 
 
 int bruteforce_count = 0;
+long long last_msg_timestamp = 0;
 
 struct worker_state {
     struct api_state api;
@@ -282,6 +283,15 @@ static int handle_client_request(struct worker_state *state) {
     state->eof = 1;
     return 0;
   }
+
+  long long curr_timestamp = current_timestamp();
+  if (curr_timestamp - last_msg_timestamp < 1000) {
+    printf("User DoSes me!\n");
+    char *err = "Please wait!\n";
+    ssl_block_write(ssl, state->api.fd, err, strlen(err));
+    return 0;
+  }
+  last_msg_timestamp = curr_timestamp;
 
   /* execute request */
   if (execute_request(state, &msg) != 0) {
