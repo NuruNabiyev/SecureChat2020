@@ -184,7 +184,7 @@ int checkLoginCommand(char **string, int i, int loggedIn) {
       if(verify_password(string[2]) == 1) return 1;
       else printf("error: Please insert a password between 1 to 15 alphanumeric & allowed special characters!\n");
     }
-    else printf("error: Please insert a username with max 32 alphanumeric and allowed special characters!\n");
+    else printf("error: Please insert a username with max 32 alphanumeric characters!\n");
   }
   else printf("error: invalid command format\n");
   return 0;
@@ -203,7 +203,7 @@ int checkRegisterCommand(char **string, int i, int loggedIn) {
       if(verify_password(string[2]) == 1) return 1;
       else printf("error: Please insert a password between 1 to 15 alphanumeric & allowed special characters!\n");
     }
-    else printf("error: Please insert a username with max 32 alphanumeric and allowed special characters!\n");
+    else printf("error: Please insert a username with max 32 alphanumeric characters!\n");
   }
   else printf("error: invalid command format\n");
 
@@ -325,7 +325,7 @@ int verify_password(char* string)
 {
   regex_t regex;
   int first_check = 0;
-  first_check = regcomp(&regex,"[a-zA-Z0-9@$!%*?^&]\\{1,\\}", 0);
+  first_check = regcomp(&regex,"[a-zA-Z0-9@$!%*?^&]", 0);
   if (first_check != 0) 
   {
     printf("Regex did not complie correctly \n");
@@ -342,14 +342,14 @@ int verify_username(char* string)
 {
   regex_t regex;
   int first_check = 0;
-  first_check = regcomp(&regex,"[a-zA-Z0-9@$!%*?^&]\\{1,\\}", 0);
+  first_check = regcomp(&regex,"[:alnum:]", 0);
   if (first_check != 0) 
   {
     printf("Regex did not complie correctly \n");
   }
   first_check = regexec(&regex, string , 0,NULL,0);
   
-  if(first_check == 0 && strlen(string) < 33)return 1;
+  if(first_check == 0 && strlen(string) < 33) return 1;
   else return 0;
   
   return 0;

@@ -91,9 +91,9 @@ static void children_check(struct server_state *state) {
 
   assert(state);
 
-  /* check for children that may have finished */
+  
   for (;;) {
-    /* check whether a child has finished */
+    
     pid = waitpid(0, &status, WNOHANG);
     if (pid == -1 && errno != ECHILD && errno != EINTR) {
       perror("error: waitpid failed");
@@ -284,7 +284,6 @@ static int server_state_init(struct server_state *state) {
     state->children[i].worker_fd = -1;
   }
 
-  /* TODO any additional server state initialization */
 
   return 0;
 }
@@ -292,7 +291,6 @@ static int server_state_init(struct server_state *state) {
 static void server_state_free(struct server_state *state) {
   int i;
 
-  /* TODO any additional server state cleanup */
 
   for (i = 0; i < MAX_CHILDREN; i++) {
     close(state->children[i].worker_fd);
@@ -367,7 +365,6 @@ int main(int argc, char **argv) {
   /* preparations */
   server_state_init(&state);
   register_signals();
-  /* TODO any additional server initialization */
 
   /* start listening for connections */
   state.sockfd = create_server_socket(port);
@@ -387,7 +384,6 @@ int main(int argc, char **argv) {
   }
 
   /* clean up */
-  /* TODO any additional server cleanup */
   server_state_free(&state);
   close(state.sockfd);
   /* clean up SSL */

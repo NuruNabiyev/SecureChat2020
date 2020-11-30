@@ -635,7 +635,7 @@ int verify_username(char* string)
 {
   regex_t regex;
   int first_check = 0;
-  first_check = regcomp(&regex,"[a-zA-Z0-9@$!%*?^&]\\{1,32\\}", 0);
+  first_check = regcomp(&regex,"[:alnum:]", 0);
   if (first_check != 0) 
   {
     printf("Regex did not complie correctly \n");
