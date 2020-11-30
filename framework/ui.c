@@ -50,8 +50,9 @@ void readLine(struct ui_state *state){
   if(state->check_eof != NULL)
   {
     size_t ln = strlen(state->input) - 1;
-    if (state->input[ln] == '\n')
-    state->input[ln] = '\0';
+    if (state->input[ln] == '\n'){
+      state->input[ln] = '\0';
+      }
     
   }
 }
@@ -60,18 +61,30 @@ int check_command(struct ui_state *state) {
 
   if(strlen(state->input) <= 200)
   {
-    char **parsedString;
-    char *copyString = malloc(strlen(state->input) + 1);
+    char *parsedString[310] = {" "};
+    char copyString[strlen(state->input) + 2];
+    int count_characters = 0;
 
 
     strcpy(copyString, state->input);
-    parsedString = removeSpaces(copyString);
-    int arraySize = returnStringArraySize(parsedString);
-
+    removeSpaces(copyString, parsedString);
 
     if (parsedString[0] == NULL || strcmp(state->input, "\n") == 0) {
       printf("error: invalid command format\n");
       return 0;
+    }
+
+    int arraySize = returnStringArraySize(parsedString);
+    char message[300] = "asd";
+
+    for(int i=0; i<= arraySize-1;i++)
+    {
+      count_characters = count_characters + strlen(parsedString[i]);
+      if(count_characters > 200)
+      {
+        printf("error: The input excited the limit of 200 characters");
+        return 0;
+      }
     }
 
     switch (stack_of_commands(parsedString[0])) {
@@ -88,7 +101,38 @@ int check_command(struct ui_state *state) {
         {
           printf("error: command not currently available\n");
           return 0;
-        }else if (state->loggedIn == 1) return parseMessage(state->input);
+        }else if (state->loggedIn == 1) 
+        {
+          char formated_message[310] = "ad";
+          char full_message[310] = "ad";
+          strcpy(full_message, parsedString[0]);
+          int i = 1;
+          if(arraySize > 1)
+          {
+            while(i < arraySize)
+            {
+              sprintf(formated_message, " %s",parsedString[i]);
+              strcat(full_message,formated_message);
+              i++;
+            }
+            // printf("%s \n",full_message);
+          }
+          else
+          {
+            if(parseMessage(full_message) == 1)
+            {
+              return 1;
+            }
+          }
+          
+           if(parseMessage(full_message) == 1)
+           {
+             strcpy(state->input, full_message);
+             return 1;
+           }
+           else return 0;
+           
+        }
         else 
         {
           state->loggedIn = 0;
@@ -100,8 +144,6 @@ int check_command(struct ui_state *state) {
         printf("error: unknown command %s\n",parsedString[0]);
         break;
     }
-    free(parsedString);
-    free(copyString);
     return 0;
   }
   else
@@ -123,19 +165,16 @@ int stack_of_commands(char *string) {
   return 0;
 }
 
-char **removeSpaces(char *string) {
+void removeSpaces(char *string, char** parsed_string) {
   int i = 0;
-  int n = strlen(string);
-  char **token = malloc(sizeof(char *) * n);
+  int n = strlen(string) + 2;
   const char delim[4] = "  \t";
-  token[i] = strtok(string, delim);
+  parsed_string[i] = strtok(string, delim);
 
-  while (token[i] != NULL) {
+  while (parsed_string[i] != NULL) {
     i++;
-    token[i] = strtok(NULL, delim);
+    parsed_string[i] = strtok(NULL, delim);
   }
-
-  return token;
 }
 
 int returnStringArraySize(char **string) {
@@ -216,55 +255,15 @@ int checkExitCommand(char **string, int i, int loggedin) {
   return 0;
 }
 
-void  remove_whitespaces(char *string) {
-
-  int i,j,k;
-  char* copystring = NULL;
-  copystring = malloc(strlen(string) +1);
-  
-  i = 0;
-  j = strlen(string)+1;
-  k = 0;
-  if(string[0] == ' ' || string[i] == '\t' )
-  {
-    while(string[i] == ' ' ||  string[i] == '\t')
-    {
-      i++;
-    }
-  }
-  while(string[j] == '\0')
-  {
-    j = j -1;
-  }
-  
-  if(string[j-1] == ' ' || string[j-1] == '\t' )
-  {
-    while(string[j] == ' ' || string[j] == '\t')
-    {
-      j = j - 1;
-    }
-  }
-
-  for(i; i <=j ; i++)
-  {
-    copystring[k] = string[i];
-    k = k + 1; 
-  }
-  copystring[k+1] = '\0';
-  strcpy(string, copystring);
-  free(copystring);
-}
 
 int parseMessage(char *string) {
-  remove_whitespaces(string);
-  if(strlen(string) <= 200)
+  if(verify_message(string) == 1)
   {
-      if (string[0] == '@') { return 1; }
-      else { return 1; }
+      return 1;
   }
   else
   {
-    printf("error: A message cannot be larger than 200 characters! \n");
+    printf("error: Non-Ascii characters are not accepted! \n");
   }
   
   return 0;
@@ -275,14 +274,14 @@ int verify_password(char* string)
 {
   regex_t regex;
   int first_check = 0;
-  first_check = regcomp(&regex,"[a-zA-Z0-9@$!%*?^&]\\{1,15\\}", 0);
+  first_check = regcomp(&regex,"[a-zA-Z0-9@$!%*?^&]\\{1,\\}", 0);
   if (first_check != 0) 
   {
     printf("Regex did not complie correctly \n");
   }
   first_check = regexec(&regex, string , 0,NULL,0);
   
-  if(first_check == 0) return 1;
+  if(first_check == 0 && strlen(string) < 15) return 1;
   else return 0;
   
   return 0;
@@ -292,7 +291,24 @@ int verify_username(char* string)
 {
   regex_t regex;
   int first_check = 0;
-  first_check = regcomp(&regex,"[a-zA-Z0-9@$!%*?^&]\\{1,32\\}", 0);
+  first_check = regcomp(&regex,"[a-zA-Z0-9@$!%*?^&]\\{1,\\}", 0);
+  if (first_check != 0) 
+  {
+    printf("Regex did not complie correctly \n");
+  }
+  first_check = regexec(&regex, string , 0,NULL,0);
+  
+  if(first_check == 0 && strlen(string) < 33)return 1;
+  else return 0;
+  
+  return 0;
+}
+
+int verify_message(char* string)
+{
+  regex_t regex;
+  int first_check = 0;
+  first_check = regcomp(&regex,"[a-zA-Z]", 0);
   if (first_check != 0) 
   {
     printf("Regex did not complie correctly \n");

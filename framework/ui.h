@@ -22,7 +22,7 @@ void readLine(struct ui_state *state);
 int check_command(struct ui_state *state);
 
 //Removes Whitespaces and returns a array of strings
-char **removeSpaces(char *string);
+void removeSpaces(char *string, char** parsed_string);
 
 //Returns the size of an array of strings
 int returnStringArraySize(char **string);

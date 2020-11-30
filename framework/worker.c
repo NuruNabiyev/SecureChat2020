@@ -14,6 +14,7 @@
 #include "worker.h"
 #include "chatdb.h"
 #include "ssl-nonblock.h"
+#define MAX_INPT 500
 
 
 int bruteforce_count = 0;
@@ -38,8 +39,8 @@ static int handle_s2w_notification(struct worker_state *state) {
   if (last_msg == NULL) return 0;
   if (state->last_notified_msg == NULL
       || strcmp(last_msg, state->last_notified_msg) != 0) {
-    ssl_block_write(ssl, state->api.fd, last_msg, strlen(last_msg));
-    state->last_notified_msg = malloc(strlen(last_msg));
+    ssl_block_write(ssl, state->api.fd, last_msg, strlen(last_msg)+2);
+    state->last_notified_msg = malloc(strlen(last_msg)+2);
     sprintf(state->last_notified_msg, "%s", last_msg);
   }
   return 0;
@@ -146,7 +147,7 @@ static char *extract_user_from_priv(char *private_msg) {
 static int execute_credentials(int is_register_or_login, struct worker_state *state, char *received) {
   if (state->current_user != NULL) {
     char err[] = "error: command not currently available\n";
-    ssl_block_write(ssl, state->api.fd, err, strlen(err));
+    ssl_block_write(ssl, state->api.fd, err, strlen(err) +1);
     return 0;
   }
 
@@ -167,8 +168,9 @@ static int execute_credentials(int is_register_or_login, struct worker_state *st
     state->current_user = username;
     set_logged_in(state->current_user);
     // need to initialize last sent message
-    char *last_msg = send_all_messages(state->api.fd, state->current_user, ssl);
-    state->last_notified_msg = malloc(strlen(last_msg));
+    char last_msg[500] = " ";
+    strcpy(last_msg,send_all_messages(state->api.fd, state->current_user, ssl));
+    state->last_notified_msg = malloc(strlen(last_msg) +2 );
     sprintf(state->last_notified_msg, "%s", last_msg);
   }
 }
@@ -176,11 +178,11 @@ static int execute_credentials(int is_register_or_login, struct worker_state *st
 static int execute_users(struct worker_state *state) {
   if (state->current_user == NULL) {
     char err[] = "error: command not currently available\n";
-    ssl_block_write(ssl,state->api.fd, err, strlen(err));
+    ssl_block_write(ssl,state->api.fd, err, strlen(err) + 1);
     return 0;
   }
   char *users = retrieve_all_users();
-  ssl_block_write(ssl,state->api.fd, users, strlen(users));
+  ssl_block_write(ssl,state->api.fd, users, strlen(users) + 1);
   return 1;
 }
 
@@ -190,7 +192,7 @@ static int execute_users(struct worker_state *state) {
 static int execute_private(struct worker_state *state, char *received) {
   if (state->current_user == NULL) {
     char err[] = "error: command not currently available\n";
-    ssl_block_write(ssl,state->api.fd, err, strlen(err));
+    ssl_block_write(ssl,state->api.fd, err, strlen(err) + 1);
     return 0;
   }
 
@@ -203,11 +205,11 @@ static int execute_private(struct worker_state *state, char *received) {
       notify_workers(state);
     } else {
       char err[] = "Error occurred, please retry\n";
-      ssl_block_write(ssl,state->api.fd, err, strlen(err));
+      ssl_block_write(ssl,state->api.fd, err, strlen(err) + 1);
     }
   } else {
     char err[] = "Recipient is not found\n";
-    ssl_block_write(ssl,state->api.fd, err, strlen(err));
+    ssl_block_write(ssl,state->api.fd, err, strlen(err) + 1);
   }
   return 1;
 }
@@ -218,7 +220,7 @@ static int execute_private(struct worker_state *state, char *received) {
 static int execute_public(struct worker_state *state, char *received) {
   if (state->current_user == NULL) {
     char err[] = "You must login first\n";
-    ssl_block_write(ssl,state->api.fd, err, strlen(err));
+    ssl_block_write(ssl,state->api.fd, err, strlen(err) + 1);
     return 0;
   }
 
@@ -509,7 +511,7 @@ int stack_of_commands(char *string) {
 
 char **removeSpaces(char *string) {
   int i = 0;
-  int n = strlen(string);
+  int n = strlen(string) +2;
   char **token = malloc(sizeof(char *) * n);
   const char delim[4] = "  \t";
   token[i] = strtok(string, delim);
