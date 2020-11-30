@@ -195,7 +195,7 @@ long long current_timestamp() {
 }
 
 EVP_PKEY *get_my_private_key(char *username) {
-	char *file[128];
+	char file[128];
 	FILE *fp;
 	EVP_PKEY *privkey = EVP_PKEY_new(); 
 

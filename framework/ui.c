@@ -8,6 +8,7 @@
 
 
 #define MAX_INPUT 1000
+#define MAX_STRINGS 350
 
 #include "ui.h"
 
@@ -19,7 +20,6 @@ void ui_state_free(struct ui_state *state) {
 
   assert(state);
   state->loggedIn = 0;
-  /* TODO free ui_state */
 }
  
 /**
@@ -30,7 +30,6 @@ void ui_state_init(struct ui_state *state) {
 
   assert(state);
   state->loggedIn = 0;
-  /* TODO initialize ui_state */
 }
 
 int ui_command_process(struct ui_state *state) {
@@ -63,7 +62,7 @@ int check_command(struct ui_state *state) {
 
   if(strlen(state->input) <= 200)
   {
-    char *parsedString[310] = {" "};
+    char *parsedString[MAX_STRINGS] = {" "};
     char copyString[strlen(state->input) + 2];
     int count_characters = 0;
 
@@ -95,7 +94,7 @@ int check_command(struct ui_state *state) {
       case 3:
         return checkUsersCommand(arraySize, state->loggedIn);
       case 4:
-        return checkExitCommand(parsedString, arraySize, state->loggedIn);
+        return checkExitCommand(parsedString, arraySize);
       case 5:
         if (state->loggedIn == 0) 
         {
@@ -211,7 +210,7 @@ int checkRegisterCommand(char **string, int i, int loggedIn) {
   return 0;
 }
 
-int checkExitCommand(char **string, int i, int loggedin) {
+int checkExitCommand(char **string, int i) {
 
   if (i < 2) {
     printf("The User exited the program!\n");

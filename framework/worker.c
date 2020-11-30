@@ -27,7 +27,6 @@ struct worker_state {
     int server_eof;
     char *current_user;
     char *last_notified_msg; // same message should not be replied again
-    /* TODO worker state variables go here */
 };
 
 /**
@@ -52,7 +51,6 @@ static int handle_s2w_notification(struct worker_state *state) {
  *                from the client.
  * @param state   Initialized worker state
  */
-/* TODO call this function to notify other workers through server */
 __attribute__((unused))
 static int notify_workers(struct worker_state *state) {
   char buf = 0;
@@ -103,7 +101,7 @@ static int execute_credentials(int is_register_or_login, struct worker_state *st
   }
 
   char *username = extract_username(received);
-  char *password = extract_password(received); // todo hash and salt this
+  char *password = extract_password(received);
   int ret = -1;
   if (is_register_or_login == 1) {
     ret = create_user(username, password, state->api.fd, ssl);
@@ -118,7 +116,6 @@ static int execute_credentials(int is_register_or_login, struct worker_state *st
     bruteforce_count = 0;
     state->current_user = username;
     set_logged_in(state->current_user);
-    // need to initialize last sent message
     char last_msg[500] = " ";
     strcpy(last_msg,send_all_messages(state->api.fd, state->current_user, ssl));
     state->last_notified_msg = malloc(strlen(last_msg) +2 );
@@ -310,9 +307,6 @@ static int handle_incoming(struct worker_state *state) {
   }
 
   /* handle ready file descriptors */
-  /* TODO once you implement encryption you may need to call ssl_has_data
-   * here due to buffering (see ssl-nonblock example)
-   */
   if (FD_ISSET(state->api.fd, &readfds) && ssl_has_data(ssl)) {
     if (handle_client_request(state) != 0) success = 0;
   }
@@ -339,8 +333,6 @@ static int worker_state_init(struct worker_state *state, int connfd, int server_
 
   /* set up API state */
   api_state_init(&state->api, connfd);
-
-  /* TODO any additional worker state initialization */
 
   return 0;
 }
@@ -393,7 +385,6 @@ void worker_start(int connfd, int server_fd) {
   if (worker_state_init(&state, connfd, server_fd) != 0) {
     goto cleanup;
   }
-  /* TODO any additional worker initialization */
 
   /* handle for incoming requests */
   while (!state.eof) {
@@ -405,7 +396,6 @@ void worker_start(int connfd, int server_fd) {
 
   cleanup:
   /* cleanup worker */
-  /* TODO any additional worker cleanup */
   worker_state_free(&state);
 
   exit(success ? 0 : 1);
@@ -569,7 +559,11 @@ int parseMessage(char *string) {
   remove_whitespaces(string);
   if(strlen(string) <= 200)
   {
-      if (string[0] == '@') { return 5; }
+       if (string[0] == '@') 
+      {
+        remove_whitespaces_private(string);
+        return 5; 
+      }
       else { return 5; }
   }
   else
@@ -578,6 +572,44 @@ int parseMessage(char *string) {
   }
   
   return 0;
+}
+
+
+
+void remove_whitespaces_private(char *string) {
+
+  int i,j,k;
+  char* copystring = NULL;
+  string[strlen(string)+1] = '\0';
+  copystring = malloc(strlen(string) +1);
+  
+  i = 0;
+  k = 0;
+
+  while(string[i] != ' ' && string[i] != '\t')
+  {
+    copystring[i] = string[i];
+    i++;
+  }
+  copystring[i] = string[i];
+  k = i;
+  i++;
+  while(string[i] == ' ' || string[i] == '\t')
+  {
+    i++;
+  }
+
+  while (string[i] != '\0')
+  {
+    k++;
+    copystring[k] = string[i];
+    i++;
+  }
+
+  copystring[k+1] = '\0';
+  
+  strcpy(string, copystring);
+  free(copystring);
 }
 
 
@@ -603,6 +635,25 @@ int verify_username(char* string)
   regex_t regex;
   int first_check = 0;
   first_check = regcomp(&regex,"[a-zA-Z0-9@$!%*?^&]\\{1,32\\}", 0);
+  if (first_check != 0) 
+  {
+    printf("Regex did not complie correctly \n");
+  }
+  first_check = regexec(&regex, string , 0,NULL,0);
+  
+  if(first_check == 0)return 1;
+  else return 0;
+  
+  return 0;
+}
+
+
+int verify_message(char* string)
+{
+  
+  regex_t regex;
+  int first_check = 0;
+  first_check = regcomp(&regex,"[a-zA-Z0-9@$!%*?^&]", 0);
   if (first_check != 0) 
   {
     printf("Regex did not complie correctly \n");

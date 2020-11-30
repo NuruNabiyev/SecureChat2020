@@ -57,10 +57,7 @@ static int client_connect(struct client_state *state,
 static int client_process_command(struct client_state *state) {
 
   assert(state);
-  //TODO: Check why when using read it dumps memory 
-  //TODO: see if text can be dynamically alocated or can be put in a struct
 
-  //here the text is a varibale. maybe place it in a struct? 
   if (ui_command_process(&state->ui) == 1) {
     ssl_block_write(ssl, state->api.fd, state->ui.input, strlen(state->ui.input));
     sprintf(state->last_sent_message, "%s", state->ui.input);
@@ -89,7 +86,6 @@ static int execute_request(struct client_state *state, const struct api_msg *msg
     // todo get my private key path
     printf("authentication succeeded\n");
   } else {
-    // process any message
     printf("%s", msg->received);
   }
   return 0;
@@ -136,10 +132,6 @@ static int handle_incoming(struct client_state *state) {
 
   assert(state);
 
-  /* TODO if we have work queued up, this might be a good time to do it */
-
-  /* TODO ask user for input if needed */
-
   /* list file descriptors to wait for */
   FD_ZERO(&readfds);
   FD_SET(STDIN_FILENO, &readfds);
@@ -158,9 +150,7 @@ static int handle_incoming(struct client_state *state) {
   if (FD_ISSET(STDIN_FILENO, &readfds)) {
     return client_process_command(state);
   }
-  /* TODO once you implement encryption you may need to call ssl_has_data
-   * here due to buffering (see ssl-nonblock example)
-   */
+
   if (FD_ISSET(state->api.fd, &readfds) && ssl_has_data(ssl)) {
     return handle_server_request(state);
   }
@@ -179,8 +169,6 @@ static int client_state_init(struct client_state *state) {
 }
 
 static void client_state_free(struct client_state *state) {
-
-  /* TODO any additional client state cleanup */
 
   /* cleanup API state */
   api_state_free(&state->api);
