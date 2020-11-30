@@ -228,11 +228,12 @@ int checkExitCommand(char **string, int i) {
 void  remove_whitespaces(char *string) {
 
   int i,j,k;
-  char* copystring = NULL;
-  copystring = malloc(strlen(string) +1);
-  
+  char copystring[strlen(string) + 2];
+  copystring[0] = '0';
+
+
   i = 0;
-  j = strlen(string)+1;
+  j = strlen(string);
   k = 0;
   if(string[0] == ' ' || string[i] == '\t' )
   {
@@ -257,11 +258,11 @@ void  remove_whitespaces(char *string) {
   for(i; i <=j ; i++)
   {
     copystring[k] = string[i];
-    k = k + 1; 
+    if(k < j)
+      k = k + 1; 
   }
   copystring[k+1] = '\0';
   strcpy(string, copystring);
-  free(copystring);
 }
 
 int parseMessage(char *string) {
