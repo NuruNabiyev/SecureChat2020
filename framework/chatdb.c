@@ -161,7 +161,7 @@ char *retrieve_last(char *username) {
   char *last_msg = malloc(300);
   int is_any = 0;
   while ((db_rc = sqlite3_step(db_stmt)) == SQLITE_ROW) {
-    const unsigned char * db_msg = sqlite3_column_text(db_stmt, 0);
+    const unsigned char *db_msg = sqlite3_column_text(db_stmt, 0);
     sprintf(last_msg, "%s", db_msg);
     is_any = 1;
   }
@@ -177,7 +177,7 @@ char *retrieve_last(char *username) {
 int process_global(char *received, char *username) {
   char curr_time[100] = " ";
   char main_msg[500] = " ";
-  strcpy(curr_time,get_current_time());
+  strcpy(curr_time, get_current_time());
   // main_msg = (char *) malloc(strlen(received) + strlen(curr_time) + strlen(username) + 3);
   sprintf(main_msg, "%s %s: %s\n", curr_time, username, received);
 
@@ -245,7 +245,7 @@ int process_private(char *fullmsg, char *recipient, char *curr_user) {
  * Query all messages and send to that client
  * @return last sent message
  */
-char* send_all_messages(int fd, char *username, SSL *ssl) {
+char *send_all_messages(int fd, char *username, SSL *ssl) {
   db_rc = sqlite3_open(DB_NAME, &db);
   db_sql = "SELECT message FROM global_chat "
            "where recipient IS NULL or recipient == ?1 or sender == ?1;";
@@ -326,14 +326,16 @@ char *get_current_time(void) {
   time(&rawtime);
   timeinfo = localtime(&rawtime);
   // 2019-11-01 09:30:00
-  char *time = (char *) malloc(29 * sizeof(char));
-  sprintf(time, "%d-%02d-%02d %02d:%02d:%02d",
+  int ms = current_timestamp() % (current_timestamp() / 10000000000);
+  char *time = (char *) malloc(31 * sizeof(char));
+  sprintf(time, "%d-%02d-%02d %02d:%02d:%02d:%03d",
           timeinfo->tm_year + 1900,
           timeinfo->tm_mon + 1,
           timeinfo->tm_mday,
           timeinfo->tm_hour,
           timeinfo->tm_min,
-          timeinfo->tm_sec);
+          timeinfo->tm_sec,
+          ms);
   return time;
 }
 
