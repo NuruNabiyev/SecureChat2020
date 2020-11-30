@@ -135,3 +135,10 @@ int hash_password(char *orig_pwd, unsigned char *hashed_pwd, const unsigned char
   SHA256_Final(hashed_pwd, &ctx);
   return 0;
 }
+
+long long current_timestamp() {
+  struct timeval te;
+  gettimeofday(&te, NULL);
+  long long milliseconds = te.tv_sec * 1000LL + te.tv_usec / 1000;
+  return milliseconds;
+}
