@@ -193,3 +193,57 @@ long long current_timestamp() {
   long long milliseconds = te.tv_sec * 1000LL + te.tv_usec / 1000;
   return milliseconds;
 }
+
+EVP_PKEY *get_my_private_key(char *username) {
+	char *file[128];
+	FILE *fp;
+	EVP_PKEY *privkey = EVP_PKEY_new(); 
+
+	snprintf(file, sizeof(file), "./clientkeys/%s/privkey-client.pem", username);
+	fp = fopen(file, "r");
+	if (fp == NULL) {
+		return NULL;
+	}
+
+	PEM_read_PrivateKey(fp, &privkey, NULL, NULL);
+	fclose(fp);
+	
+	return privkey;
+}
+
+char* encrypt(char* msg, EVP_PKEY * pubkey) {
+
+	int encsize;
+	RSA *rsapubkey = EVP_PKEY_get1_RSA(pubkey);
+	if (rsapubkey == NULL) {
+		return NULL;
+	}
+	int size = RSA_size(rsapubkey);
+	unsigned char *encrypted = (char*)malloc(size);
+
+	encsize = RSA_public_encrypt(size, (const unsigned char*)msg, (unsigned char*)encrypted, rsapubkey, RSA_NO_PADDING);
+	if (encsize < 0) {
+		return NULL;
+	}
+
+	return encrypted;
+}
+
+char* decrypt(char* msg, EVP_PKEY * privkey) {
+
+	int size;
+	RSA *rsaprivkey = EVP_PKEY_get1_RSA(privkey);
+	if (rsaprivkey == NULL) {
+		return NULL;
+	}
+	int encsize = RSA_size(rsaprivkey);
+	unsigned char *decrypted = (char*)malloc(size);
+
+	size = RSA_private_decrypt(encsize, (unsigned char*)msg, (unsigned char*)decrypted, rsaprivkey, RSA_NO_PADDING);
+	if (size < 0) {
+		return NULL;
+	}
+	return decrypted;
+}
+
+
