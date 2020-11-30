@@ -285,7 +285,7 @@ static int handle_client_request(struct worker_state *state) {
   }
 
   long long curr_timestamp = current_timestamp();
-  if (curr_timestamp - last_msg_timestamp < 1000) {
+  if (curr_timestamp - last_msg_timestamp < 500) {
     printf("User DoSes me!\n");
     char *err = "Please wait!\n";
     ssl_block_write(ssl, state->api.fd, err, strlen(err));
