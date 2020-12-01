@@ -9,7 +9,7 @@ function createKeys() {
 		exit
 		fi
 
-		echo "`date`: Creating keys for $1." >> ttp.log
+		echo "$(date): Creating keys for $1." >> ttp.log
 
 		if ! [ -d ./ttp-keys ] 
 		then
@@ -29,9 +29,9 @@ function createKeys() {
 		else
 		if ! [ -d ./clientkeys/"$1" ]
 		then
-			cd clientkeys
+			cd clientkeys || exit
 			mkdir "$1"
-			cd -
+			cd - || exit
 		fi
 		fi
 
@@ -60,7 +60,7 @@ function createKeys() {
 			openssl rsa -pubout \
 				 -in ./serverkeys/privkey-server.pem \
 				 -out ./serverkeys/pubkey-server.pem >/dev/null
-				 echo "`pwd`/serverkeys"
+				 echo "$(pwd)/serverkeys"
 		else
 			openssl genrsa -out ./clientkeys/"$1"/privkey-client"$1".pem >/dev/null
 			openssl req -new -key ./clientkeys/"$1"/privkey-client"$1".pem \
@@ -75,7 +75,7 @@ function createKeys() {
 				 -in ./clientkeys/"$1"/privkey-client"$1".pem \
 				 -out ./clientkeys/"$1"/pubkey-client"$1".pem >/dev/null
 
-				 echo "`pwd`/clientkeys/$1"
+				 echo "$(pwd)/clientkeys/$1"
 		fi
 
 		rm -f ./ttp-keys/server-csr.pem
@@ -89,7 +89,7 @@ function verifyKeys() {
 		exit
 	fi
 
-	echo "`date`: Verifying keys for $2." >> ttp.log
+	echo "$(date): Verifying keys for $2." >> ttp.log
 
 	if [ "$2" == "server" ]
 	then
@@ -111,11 +111,11 @@ fi
 
 if [ "$1" == "create" ]
 then
-	createKeys $2
+	createKeys "$2"
 fi
 
 if [ "$1" == "verify" ]
 then
-	verifyKeys $1 $2
+	verifyKeys "$1" "$2"
 fi
 

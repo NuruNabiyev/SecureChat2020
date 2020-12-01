@@ -18,7 +18,6 @@ int create_tables() {
   sqlite3_prepare_v2(db, "CREATE TABLE IF NOT EXISTS \"global_chat\" ("
                          "\"id\" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT UNIQUE,"
                          "\"sender\" TEXT NOT NULL,"
-                         // username or NULL for global
                          "\"recipient\" TEXT,"
                          "\"message\" TEXT NOT NULL"
                          ");",
@@ -58,7 +57,7 @@ int create_tables() {
  * Adds user into DB
  * @return 1 on success, 0 if error
  */
-int create_user(char *username, char *password, int fd) {
+int create_user(char *username, char *password, int fd, SSL *ssl) {
   db_rc = sqlite3_open(DB_NAME, &db);
 
   db_sql = "SELECT COUNT(*) FROM users WHERE username = ?1";
@@ -90,24 +89,32 @@ int create_user(char *username, char *password, int fd) {
     if (db_rc == SQLITE_DONE) {
       // send to client
       char *register_ok = "registration succeeded\n";
-      send(fd, register_ok, strlen(register_ok), 0);
+      ssl_block_write(ssl, fd, register_ok, strlen(register_ok));
       return 1;
     } else {
       printf("ERROR inserting data: %s\n", sqlite3_errmsg(db));
       char *registration_fail = "error: please try again\n";
-      send(fd, registration_fail, strlen(registration_fail), 0);
+      ssl_block_write(ssl, fd, registration_fail, strlen(registration_fail));
     }
 
   } else {
     // send to client
     char *registration_fail = "error: user already exists\n";
-    send(fd, registration_fail, strlen(registration_fail), 0);
+    ssl_block_write(ssl, fd, registration_fail, strlen(registration_fail));
   }
   return 0;
 }
 
-int check_login(char *username, char *password, int fd) {
+int check_login(char *username, char *password, int fd, SSL *ssl) {
   db_rc = sqlite3_open(DB_NAME, &db);
+
+  int logged_in = user_logged_in(username);
+  if (logged_in) {
+    char *login_fail = "error: user already logged in\n";
+    ssl_block_write(ssl, fd, login_fail, strlen(login_fail));
+    return 0;
+  }
+
   db_sql = "SELECT * FROM users WHERE username = ?1";
   sqlite3_prepare_v2(db, db_sql, -1, &db_stmt, NULL);
   sqlite3_bind_text(db_stmt, 1, username, -1, SQLITE_STATIC);
@@ -127,12 +134,12 @@ int check_login(char *username, char *password, int fd) {
 
   if (password_matches == 1) {
     char *text = "authentication succeeded\n";
-    send(fd, text, strlen(text), 0);
+    ssl_block_write(ssl, fd, text, strlen(text));
     return 1;
   } else {
     // send error to client
     char *login_fail = "error: invalid credentials\n";
-    send(fd, login_fail, strlen(login_fail), 0);
+    ssl_block_write(ssl, fd, login_fail, strlen(login_fail));
   }
   return 0;
 }
@@ -149,7 +156,7 @@ char *retrieve_last(char *username) {
   sqlite3_prepare_v2(db, db_sql, strlen(db_sql), &db_stmt, NULL);
   sqlite3_bind_text(db_stmt, 1, username, -1, SQLITE_STATIC);
 
-  // will be looped once
+  
   char *last_msg = malloc(300);
   int is_any = 0;
   while ((db_rc = sqlite3_step(db_stmt)) == SQLITE_ROW) {
@@ -167,10 +174,9 @@ char *retrieve_last(char *username) {
  * @return -1 if failed, 1 if all ok and proceed to notify workers
  */
 int process_global(char *received, char *username) {
-  char *curr_time = NULL;
-  char *main_msg = NULL;
-  curr_time = get_current_time();
-  main_msg = (char *) malloc(strlen(received) + strlen(curr_time) + strlen(username) + 3);
+  char curr_time[100] = " ";
+  char main_msg[500] = " ";
+  strcpy(curr_time,get_current_time());
   sprintf(main_msg, "%s %s: %s\n", curr_time, username, received);
 
   db_rc = sqlite3_open(DB_NAME, &db);
@@ -189,7 +195,6 @@ int process_global(char *received, char *username) {
   sqlite3_finalize(db_stmt);
 
   if (db_rc == SQLITE_DONE) {
-    free(main_msg);
     return 1;
   } else {
     printf("ERROR in adding message to table: %s\n", sqlite3_errmsg(db));
@@ -204,9 +209,9 @@ int process_private(char *fullmsg, char *recipient, char *curr_user) {
     printf("Same recipient and sender\n");
     return -1;
   }
-
-  char *curr_time = get_current_time();
-  char *main_msg = (char *) malloc(500);
+  char curr_time[100];
+  char main_msg[500];
+  strcpy(curr_time, get_current_time());
   sprintf(main_msg, "%s %s: %s\n", curr_time, curr_user, fullmsg);
 
   db_rc = sqlite3_open(DB_NAME, &db);
@@ -226,7 +231,6 @@ int process_private(char *fullmsg, char *recipient, char *curr_user) {
 
   // send to recipient and current user
   if (db_rc == SQLITE_DONE) {
-    free(main_msg);
     return 1;
   } else {
     printf("ERROR in adding message to table: %s\n", sqlite3_errmsg(db));
@@ -238,18 +242,17 @@ int process_private(char *fullmsg, char *recipient, char *curr_user) {
  * Query all messages and send to that client
  * @return last sent message
  */
-char* send_all_messages(int fd, char *username) {
+char* send_all_messages(int fd, char *username, SSL *ssl) {
   db_rc = sqlite3_open(DB_NAME, &db);
   db_sql = "SELECT message FROM global_chat "
            "where recipient IS NULL or recipient == ?1 or sender == ?1;";
   sqlite3_prepare_v2(db, db_sql, strlen(db_sql), &db_stmt, NULL);
   sqlite3_bind_text(db_stmt, 1, username, -1, SQLITE_STATIC);
 
-  // todo gather to single payload and send?
   char *last_msg = malloc(300);
   while ((db_rc = sqlite3_step(db_stmt)) == SQLITE_ROW) {
     unsigned const char *curr_msg = sqlite3_column_text(db_stmt, 0);
-    send(fd, curr_msg, strlen(curr_msg), 0);
+    ssl_block_write(ssl, fd, curr_msg, strlen(curr_msg));
     sprintf(last_msg, "%s", curr_msg);
   }
   sqlite3_finalize(db_stmt);
@@ -285,7 +288,7 @@ char *retrieve_all_users() {
     strcat(logged_in_users, curr_user);
     strcat(logged_in_users, ", ");
   }
-  // remove last coma
+ 
   size_t ln = strlen(logged_in_users) - 2;
   if (logged_in_users[ln] == ',') {
     logged_in_users[ln] = '\n';
@@ -299,7 +302,6 @@ char *retrieve_all_users() {
 }
 
 void logout_user(char *current_user) {
-  // make is_logged_in false for this user
   db_rc = sqlite3_open(DB_NAME, &db);
   db_sql = "UPDATE users set is_logged_in = ?1 where username = ?2;";
   sqlite3_prepare_v2(db, db_sql, -1, &db_stmt, NULL);
@@ -318,7 +320,6 @@ char *get_current_time(void) {
   struct tm *timeinfo;
   time(&rawtime);
   timeinfo = localtime(&rawtime);
-  // 2019-11-01 09:30:00
   char *time = (char *) malloc(29 * sizeof(char));
   sprintf(time, "%d-%02d-%02d %02d:%02d:%02d",
           timeinfo->tm_year + 1900,
@@ -337,6 +338,20 @@ char *get_current_time(void) {
  */
 int user_exists(char *username) {
   db_sql = "SELECT COUNT(*) FROM users WHERE username = ?1";
+  sqlite3_prepare_v2(db, db_sql, -1, &db_stmt, NULL);
+  sqlite3_bind_text(db_stmt, 1, username, -1, SQLITE_STATIC);
+
+  int user_online = 0;
+  while ((db_rc = sqlite3_step(db_stmt)) == SQLITE_ROW) {
+    user_online = sqlite3_column_int(db_stmt, 0);
+  }
+  sqlite3_finalize(db_stmt);
+
+  return user_online;
+}
+
+int user_logged_in(char *username) {
+  db_sql = "SELECT COUNT(*) FROM users WHERE username = ?1 and is_logged_in = 1";
   sqlite3_prepare_v2(db, db_sql, -1, &db_stmt, NULL);
   sqlite3_bind_text(db_stmt, 1, username, -1, SQLITE_STATIC);
 

@@ -13,14 +13,13 @@
  * @return        Returns 1 on new message, 0 in case socket was closed,
  *                or -1 in case of error.
  */
-int api_recv(struct api_state *state, struct api_msg *msg) {
+int api_recv(struct api_state *state, struct api_msg *msg, SSL *ssl) {
 
   assert(state);
   assert(msg);
 
   char client_msg[500] = "";
-  int recv_bytes = recv(state->fd, client_msg, 500, 0);
-  // substring until received bytes
+  int recv_bytes = ssl_block_read(ssl, state->fd, client_msg, 500);
   char substr[500] = "";
   for (int i = 0; i < recv_bytes; ++i)
     substr[i] = client_msg[i];
@@ -41,9 +40,6 @@ int api_recv(struct api_state *state, struct api_msg *msg) {
 void api_recv_free(struct api_msg *msg) {
 
   assert(msg);
-//  memset(msg->received, 0, strlen(msg->received));
-//  free(msg->received);
-  /* TODO clean up state allocated for msg */
 }
 
 /**
@@ -53,8 +49,6 @@ void api_recv_free(struct api_msg *msg) {
 void api_state_free(struct api_state *state) {
 
   assert(state);
-
-  /* TODO clean up API state */
 }
 
 /**
@@ -71,6 +65,4 @@ void api_state_init(struct api_state *state, int fd) {
 
   /* store connection socket */
   state->fd = fd;
-
-  /* TODO initialize API state */
 }

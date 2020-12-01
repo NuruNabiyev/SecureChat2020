@@ -5,14 +5,20 @@
 #include <string.h>
 #include <unistd.h>
 
+#include "ssl-nonblock.h"
 #include "api.h"
 #include "ui.h"
 #include "util.h"
+
+SSL_CTX *ctx;
+SSL *ssl;
 
 struct client_state {
     struct api_state api;
     int eof;
     struct ui_state ui;
+    char *my_username; // used to get my private key. Do not use to get other users' private keys
+    char *last_sent_message;
 };
 
 /**
@@ -51,12 +57,14 @@ static int client_connect(struct client_state *state,
 static int client_process_command(struct client_state *state) {
 
   assert(state);
-  //TODO: Check why when using read it dumps memory 
-  //TODO: see if text can be dynamically alocated or can be put in a struct
-
-  //here the text is a varibale. maybe place it in a struct? 
+   
   if (ui_command_process(&state->ui) == 1) {
-    send(state->api.fd, state->ui.input, strlen(state->ui.input), 0);
+    ssl_block_write(ssl, state->api.fd, state->ui.input, strlen(state->ui.input));
+    sprintf(state->last_sent_message, "%s", state->ui.input);
+  }
+  if(strcmp(state->ui.check_eof, "secProg") == 0)
+  {
+    state->eof = 1;
   }
   return 0;
 }
@@ -69,12 +77,13 @@ static int client_process_command(struct client_state *state) {
 static int execute_request(struct client_state *state, const struct api_msg *msg) {
   if (strcmp(msg->received, "registration succeeded\n") == 0) {
     state->ui.loggedIn = 1;
+    state->my_username = extract_username(state->last_sent_message);
     printf("registration succeeded\n");
   } else if (strcmp(msg->received, "authentication succeeded\n") == 0) {
     state->ui.loggedIn = 1;
+    state->my_username = extract_username(state->last_sent_message);
     printf("authentication succeeded\n");
   } else {
-    // process any message
     printf("%s", msg->received);
   }
   return 0;
@@ -91,7 +100,7 @@ static int handle_server_request(struct client_state *state) {
   assert(state);
 
   /* wait for incoming request, set eof if there are no more requests */
-  r = api_recv(&state->api, &msg);
+  r = api_recv(&state->api, &msg, ssl);
   if (r < 0) return -1;
   if (r == 0) {
     state->eof = 1;
@@ -121,9 +130,6 @@ static int handle_incoming(struct client_state *state) {
 
   assert(state);
 
-  /* TODO if we have work queued up, this might be a good time to do it */
-
-  /* TODO ask user for input if needed */
 
   /* list file descriptors to wait for */
   FD_ZERO(&readfds);
@@ -143,10 +149,8 @@ static int handle_incoming(struct client_state *state) {
   if (FD_ISSET(STDIN_FILENO, &readfds)) {
     return client_process_command(state);
   }
-  /* TODO once you implement encryption you may need to call ssl_has_data
-   * here due to buffering (see ssl-nonblock example)
-   */
-  if (FD_ISSET(state->api.fd, &readfds)) {
+ 
+  if (FD_ISSET(state->api.fd, &readfds) && ssl_has_data(ssl)) {
     return handle_server_request(state);
   }
   return 0;
@@ -159,14 +163,11 @@ static int client_state_init(struct client_state *state) {
   /* initialize UI */
   ui_state_init(&state->ui);
 
-  /* TODO any additional client state initialization */
-
+  state->last_sent_message = malloc(1000);
   return 0;
 }
 
 static void client_state_free(struct client_state *state) {
-
-  /* TODO any additional client state cleanup */
 
   /* cleanup API state */
   api_state_free(&state->api);
@@ -191,6 +192,9 @@ int main(int argc, char **argv) {
   if (argc != 3) usage();
   if (parse_port(argv[2], &port) != 0) usage();
 
+  ctx = SSL_CTX_new(TLS_client_method());
+  ssl = SSL_new(ctx);
+
   /* preparations */
   client_state_init(&state);
 
@@ -198,18 +202,27 @@ int main(int argc, char **argv) {
   fd = client_connect(&state, argv[1], port);
   if (fd < 0) return 1;
 
+  set_nonblock(fd);
+  SSL_set_fd(ssl, fd);
+
   /* initialize API */
   api_state_init(&state.api, fd);
 
-  /* TODO any additional client initialization */
+  int connection_status = ssl_block_connect(ssl, fd);
+  if (connection_status == -1) {
+    puts("ssl error");
+    return 1;
+  }
 
   /* client things */
   while (!state.eof && handle_incoming(&state) == 0);
 
   /* clean up */
-  /* TODO any additional client cleanup */
   client_state_free(&state);
   close(fd);
+  /* clean up SSL */
+  SSL_free(ssl);
+  SSL_CTX_free(ctx);
 
   return 0;
 }

@@ -14,8 +14,12 @@
 #include "util.h"
 #include "worker.h"
 #include "chatdb.h"
+#include "ssl-nonblock.h"
 
 #define MAX_CHILDREN 16
+
+SSL_CTX *ctx;
+SSL *ssl;
 
 struct server_child_state {
   int worker_fd;  /* server <-> worker bidirectional notification channel */
@@ -373,6 +377,9 @@ int main(int argc, char **argv) {
     return 1;
   }
 
+  ctx = SSL_CTX_new(TLS_server_method());
+  ssl = SSL_new(ctx);
+
   /* wait for connections */
   for (;;) {
       children_check(&state);
@@ -383,6 +390,9 @@ int main(int argc, char **argv) {
   /* TODO any additional server cleanup */
   server_state_free(&state);
   close(state.sockfd);
+  /* clean up SSL */
+  SSL_free(ssl);
+  SSL_CTX_free(ctx);
 
   return 0;
 }
