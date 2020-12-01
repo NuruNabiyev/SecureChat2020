@@ -2,7 +2,7 @@
 Secure Chat app for Secure Programming 2020 course
 
 ### NOTE: In case of the functionality tests failing, please consider rerunning the tests a second time. 
-### NOTE: Please see README.pdf for a version that contains descriptive figures that complement the documentation.
+### NOTE: Please see README.pdf for a version that contains descriptive figures that complement the documentation (outdated).
 
 # Documentation
 The underneath text forms the documentation of the SecureChat program developed for the Secure Programming course of the Deep Programming minor academic year '20/'21. The software is developed in C. All functionality and design decisions are documented in here and are structured as follows:
