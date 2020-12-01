@@ -1,6 +1,7 @@
 # SecureChat2020
 Secure Chat app for Secure Programming 2020 course
 
+### NOTE: In case of the functionality tests failing, please consider rerunning the tests a second time. 
 ### NOTE: Please see README.pdf for a version that contains descriptive figures that complement the documentation.
 
 # Documentation
@@ -102,7 +103,7 @@ In the below image, an overview is given of the earlier presented architecture i
 
 Section 1 on the architecture already displayed a few types of communication. The above figure applies the required cryptography scheme to each communication type. The legend shows which type is being used between the components. 
 
-**NOTE: due to some last-minute memory errors regarding the private message encryption, we have not been able to implement this.**
+**NOTE: due to some last-minute memory errors regarding the private message encryption, we have not been able to implement this. However, the working encryption and decryption methods can be found in `util.c`.**
 
 ### Hybrid Encryption
 First, the hybrid encryption scheme between client and worker is discussed. A hybrid encryption scheme is implemented by generating a symmetric key and symetrically encrypting the message. Reuse of the symmetric keys is not allowed, meaning every message requires the generation of a new AES-secret (symmetric key). Then, the recipient's public key (obtained from the TTP) is used to encrypt this symmetric key, after which the encrypted message and the encrypted symmetric key are sent to the recipient. This overcomes the fact that RSA can only encrypt limited-size messages, creates some overhead in size after encryption and thus can be relatively expensive on small architectures. This type of encryption will be used for client to server or client to client communication. The way in which this hybrid encryption scheme will be implemented is an SSL implementation.
